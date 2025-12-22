@@ -5,7 +5,7 @@ const WebSocket = require('ws');
 const http = require('http');
 const crypto = require('crypto');
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 10000;
 
 // Create HTTP server
 const server = http.createServer((req, res) => {
