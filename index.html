@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeonaut - Speedrun RPG</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Main Menu -->
+        <div id="menu-screen" class="screen active">
+            <div class="glass-panel main-menu">
+                <h1 class="title">⚔️ DUNGEONAUT ⚔️</h1>
+                <p class="subtitle">Master the Dungeon. Break the Clock.</p>
+
+                <div class="daily-info">
+                    <div class="info-item">
+                        <span class="label">Daily Seed:</span>
+                        <span id="daily-seed" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Today's Modifier:</span>
+                        <span id="daily-modifier" class="value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Stamina:</span>
+                        <span id="stamina-display" class="value">5/5</span>
+                    </div>
+                </div>
+
+                <div class="menu-buttons">
+                    <button class="btn btn-primary" onclick="game.showPlanningScreen()">
+                        <span class="btn-icon">🎯</span>
+                        Start Run
+                    </button>
+                    <button class="btn btn-primary" onclick="game.showPvPLobby()">
+                        <span class="btn-icon">⚔️</span>
+                        PvP Arena
+                    </button>
+                    <button class="btn btn-secondary" onclick="game.showLeaderboard()">
+                        <span class="btn-icon">🏆</span>
+                        Leaderboards
+                    </button>
+                    <button class="btn btn-secondary" onclick="game.showGhostStats()">
+                        <span class="btn-icon">👻</span>
+                        Ghost Stats
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Planning Screen -->
+        <div id="planning-screen" class="screen">
+            <div class="glass-panel planning-panel">
+                <h2>Pre-Run Planning</h2>
+
+                <div class="planning-sections">
+                    <!-- Stats Allocation -->
+                    <div class="section">
+                        <h3>📊 Stat Allocation (10 points)</h3>
+                        <div class="stat-controls">
+                            <div class="stat-row">
+                                <label>Strength (Damage)</label>
+                                <button onclick="game.adjustStat('strength', -1)">-</button>
+                                <span id="stat-strength">3</span>
+                                <button onclick="game.adjustStat('strength', 1)">+</button>
+                            </div>
+                            <div class="stat-row">
+                                <label>Vitality (HP)</label>
+                                <button onclick="game.adjustStat('vitality', -1)">-</button>
+                                <span id="stat-vitality">3</span>
+                                <button onclick="game.adjustStat('vitality', 1)">+</button>
+                            </div>
+                            <div class="stat-row">
+                                <label>Agility (Speed)</label>
+                                <button onclick="game.adjustStat('agility', -1)">-</button>
+                                <span id="stat-agility">2</span>
+                                <button onclick="game.adjustStat('agility', 1)">+</button>
+                            </div>
+                            <div class="stat-row">
+                                <label>Luck (Crit Chance)</label>
+                                <button onclick="game.adjustStat('luck', -1)">-</button>
+                                <span id="stat-luck">2</span>
+                                <button onclick="game.adjustStat('luck', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="stat-summary">
+                            Points Remaining: <span id="points-remaining">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Gear Selection -->
+                    <div class="section">
+                        <h3>⚔️ Gear Loadout</h3>
+                        <div class="gear-grid" id="gear-selection">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Skill Selection -->
+                    <div class="section">
+                        <h3>✨ Skills (Choose 3)</h3>
+                        <div class="skill-grid" id="skill-selection">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="planning-actions">
+                    <button class="btn btn-secondary" onclick="game.showMainMenu()">Back</button>
+                    <button class="btn btn-primary" onclick="game.startRun()" id="start-run-btn">Begin Run</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dungeon Run Screen -->
+        <div id="dungeon-screen" class="screen">
+            <div class="dungeon-container">
+                <!-- HUD -->
+                <div class="hud glass-panel">
+                    <div class="hud-section">
+                        <div class="timer">
+                            <span class="label">Time:</span>
+                            <span id="run-timer" class="value timer-value">00:00.0</span>
+                        </div>
+                    </div>
+                    <div class="hud-section">
+                        <div class="hp-bar">
+                            <span class="label">HP:</span>
+                            <div class="bar-container">
+                                <div id="hp-bar-fill" class="bar-fill hp-fill" style="width: 100%"></div>
+                                <span id="hp-text" class="bar-text">100/100</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hud-section">
+                        <span class="label">Room:</span>
+                        <span id="room-counter" class="value">1/10</span>
+                    </div>
+                    <div class="hud-section">
+                        <span class="label">Deaths:</span>
+                        <span id="death-counter" class="value">0</span>
+                    </div>
+                </div>
+
+                <!-- Main Dungeon Area -->
+                <div class="dungeon-main">
+                    <div class="room-display glass-panel">
+                        <h3 id="room-title">Combat Room</h3>
+                        <div id="room-content" class="room-content">
+                            <!-- Room content populated by JS -->
+                        </div>
+
+                        <!-- Combat Log -->
+                        <div class="combat-log" id="combat-log">
+                            <!-- Combat events appear here -->
+                        </div>
+                    </div>
+
+                    <!-- Skills Bar -->
+                    <div class="skills-bar glass-panel">
+                        <div id="active-skills" class="active-skills">
+                            <!-- Skills populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Room Navigation -->
+                    <div class="room-navigation" id="room-navigation">
+                        <!-- Navigation options populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="screen">
+            <div class="glass-panel results-panel">
+                <h2 id="results-title">Run Complete!</h2>
+
+                <div class="results-breakdown">
+                    <div class="result-row major">
+                        <span>Final Time:</span>
+                        <span id="final-time" class="highlight">00:00.0</span>
+                    </div>
+                    <div class="result-row">
+                        <span>Base Time:</span>
+                        <span id="base-time">00:00.0</span>
+                    </div>
+                    <div class="result-row">
+                        <span>Combat Time:</span>
+                        <span id="combat-time">00:00.0</span>
+                    </div>
+                    <div class="result-row penalty">
+                        <span>Death Penalties:</span>
+                        <span id="death-penalty">+00:00.0</span>
+                    </div>
+                    <div class="result-row penalty">
+                        <span>Gear Break Penalties:</span>
+                        <span id="gear-penalty">+00:00.0</span>
+                    </div>
+                    <div class="result-row bonus">
+                        <span>Speed Bonuses:</span>
+                        <span id="speed-bonus">-00:00.0</span>
+                    </div>
+                    <div class="result-row">
+                        <span>Perfect Clears:</span>
+                        <span id="perfect-clears">0</span>
+                    </div>
+                </div>
+
+                <div id="leaderboard-position" class="leaderboard-position">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="results-actions">
+                    <button class="btn btn-secondary" onclick="game.showLeaderboard()">View Leaderboard</button>
+                    <button class="btn btn-primary" onclick="game.showMainMenu()">Main Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboard-screen" class="screen">
+            <div class="glass-panel leaderboard-panel">
+                <h2>🏆 Leaderboards</h2>
+
+                <div class="leaderboard-tabs">
+                    <button class="tab-btn active" onclick="game.switchLeaderboard('daily')">Daily</button>
+                    <button class="tab-btn" onclick="game.switchLeaderboard('weekly')">Weekly</button>
+                    <button class="tab-btn" onclick="game.switchLeaderboard('alltime')">All-Time</button>
+                </div>
+
+                <div class="leaderboard-content">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Player</th>
+                                <th>Time</th>
+                                <th>Deaths</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="leaderboard-actions">
+                    <button class="btn btn-secondary" onclick="game.showMainMenu()">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ghost Stats Screen -->
+        <div id="ghost-screen" class="screen">
+            <div class="glass-panel ghost-panel">
+                <h2>👻 Ghost Stats - Top Run Analysis</h2>
+
+                <div id="ghost-content" class="ghost-content">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="ghost-actions">
+                    <button class="btn btn-secondary" onclick="game.showMainMenu()">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PvP Lobby Screen -->
+        <div id="pvp-lobby-screen" class="screen">
+            <div class="glass-panel pvp-lobby-panel">
+                <h2>⚔️ PvP Arena</h2>
+                <p class="subtitle">Tactical Turn-Based Combat</p>
+
+                <!-- Multiplayer Status -->
+                <div class="multiplayer-status" id="multiplayer-status">
+                    <span id="connection-status">Connecting...</span>
+                    <span id="username-display"></span>
+                </div>
+
+                <div class="pvp-mode-selection">
+                    <h3>Select Battle Mode</h3>
+                    <div class="mode-options">
+                        <div class="mode-card" onclick="game.selectPvPMode('online-ranked')">
+                            <div class="mode-icon">🌐</div>
+                            <div class="mode-name">Online Ranked</div>
+                            <div class="mode-desc">Battle real players for ranking</div>
+                        </div>
+                        <div class="mode-card" onclick="game.selectPvPMode('online-unranked')">
+                            <div class="mode-icon">🎮</div>
+                            <div class="mode-name">Online Casual</div>
+                            <div class="mode-desc">Practice against real opponents</div>
+                        </div>
+                        <div class="mode-card" onclick="game.selectPvPMode('ranked')">
+                            <div class="mode-icon">🏆</div>
+                            <div class="mode-name">VS AI (Ranked)</div>
+                            <div class="mode-desc">Train against AI opponents</div>
+                        </div>
+                        <div class="mode-card" onclick="game.selectPvPMode('practice')">
+                            <div class="mode-icon">🎯</div>
+                            <div class="mode-name">VS AI (Practice)</div>
+                            <div class="mode-desc">Test builds with no pressure</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pvp-stats" id="pvp-stats">
+                    <h3>Your Arena Stats</h3>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <span class="label">Wins:</span>
+                            <span id="pvp-wins" class="value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">Losses:</span>
+                            <span id="pvp-losses" class="value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">Win Rate:</span>
+                            <span id="pvp-winrate" class="value">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pvp-lobby-actions">
+                    <button class="btn btn-secondary" onclick="game.showMainMenu()">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matchmaking Screen -->
+        <div id="matchmaking-screen" class="screen">
+            <div class="glass-panel matchmaking-panel">
+                <h2>🔍 Finding Opponent...</h2>
+                <div class="matchmaking-spinner">
+                    <div class="spinner"></div>
+                </div>
+                <p id="matchmaking-status">Searching for players...</p>
+                <p class="queue-time">Time in queue: <span id="queue-timer">0:00</span></p>
+                <button class="btn btn-secondary" onclick="game.cancelMatchmaking()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Match Found Screen -->
+        <div id="match-found-screen" class="screen">
+            <div class="glass-panel match-found-panel">
+                <h2>⚔️ Opponent Found!</h2>
+                <div class="opponent-info">
+                    <div class="opponent-card">
+                        <div class="opponent-icon">👤</div>
+                        <h3 id="opponent-name">Opponent</h3>
+                    </div>
+                </div>
+                <p class="match-message">Prepare for battle!</p>
+                <button class="btn btn-primary" onclick="game.proceedToBuild()">Continue</button>
+            </div>
+        </div>
+
+        <!-- PvP Build Selection Screen -->
+        <div id="pvp-build-screen" class="screen">
+            <div class="glass-panel pvp-build-panel">
+                <h2>Build Your Fighter</h2>
+
+                <div class="pvp-build-sections">
+                    <!-- Stats Allocation -->
+                    <div class="section">
+                        <h3>📊 Stat Allocation (10 points)</h3>
+                        <div class="stat-controls">
+                            <div class="stat-row">
+                                <label>Strength (Damage)</label>
+                                <button onclick="game.adjustPvPStat('strength', -1)">-</button>
+                                <span id="pvp-stat-strength">3</span>
+                                <button onclick="game.adjustPvPStat('strength', 1)">+</button>
+                            </div>
+                            <div class="stat-row">
+                                <label>Vitality (HP)</label>
+                                <button onclick="game.adjustPvPStat('vitality', -1)">-</button>
+                                <span id="pvp-stat-vitality">3</span>
+                                <button onclick="game.adjustPvPStat('vitality', 1)">+</button>
+                            </div>
+                            <div class="stat-row">
+                                <label>Agility (Speed)</label>
+                                <button onclick="game.adjustPvPStat('agility', -1)">-</button>
+                                <span id="pvp-stat-agility">2</span>
+                                <button onclick="game.adjustPvPStat('agility', 1)">+</button>
+                            </div>
+                            <div class="stat-row">
+                                <label>Luck (Crit Chance)</label>
+                                <button onclick="game.adjustPvPStat('luck', -1)">-</button>
+                                <span id="pvp-stat-luck">2</span>
+                                <button onclick="game.adjustPvPStat('luck', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="stat-summary">
+                            Points Remaining: <span id="pvp-points-remaining">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Skill Selection -->
+                    <div class="section">
+                        <h3>✨ Skills (Choose 4 for PvP)</h3>
+                        <div class="pvp-skill-grid" id="pvp-skill-selection">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pvp-build-actions">
+                    <button class="btn btn-secondary" onclick="game.showPvPLobby()">Back</button>
+                    <button class="btn btn-primary" onclick="game.startPvPBattle()" id="start-pvp-btn">Enter Battle</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PvP Battle Screen -->
+        <div id="pvp-battle-screen" class="screen">
+            <div class="pvp-battle-container">
+                <!-- Battle HUD -->
+                <div class="pvp-hud glass-panel">
+                    <div class="fighter-display player-display">
+                        <div class="fighter-name">You</div>
+                        <div class="hp-bar">
+                            <div class="bar-container">
+                                <div id="pvp-player-hp-fill" class="bar-fill hp-fill" style="width: 100%"></div>
+                                <span id="pvp-player-hp-text" class="bar-text">100/100</span>
+                            </div>
+                        </div>
+                        <div id="pvp-player-shield" class="shield-display">🛡️ Shield: 0</div>
+                        <div id="pvp-player-status" class="status-display"></div>
+                    </div>
+
+                    <div class="battle-info">
+                        <div class="turn-counter">Turn <span id="pvp-turn">1</span>/30</div>
+                        <div class="vs-display">⚔️ VS ⚔️</div>
+                    </div>
+
+                    <div class="fighter-display opponent-display">
+                        <div class="fighter-name">Rival</div>
+                        <div class="hp-bar">
+                            <div class="bar-container">
+                                <div id="pvp-opponent-hp-fill" class="bar-fill hp-fill" style="width: 100%"></div>
+                                <span id="pvp-opponent-hp-text" class="bar-text">120/120</span>
+                            </div>
+                        </div>
+                        <div id="pvp-opponent-shield" class="shield-display">🛡️ Shield: 0</div>
+                        <div id="pvp-opponent-status" class="status-display"></div>
+                    </div>
+                </div>
+
+                <!-- Battle Log -->
+                <div class="pvp-battle-log glass-panel">
+                    <h4>Battle Log</h4>
+                    <div id="pvp-log" class="log-content">
+                        <!-- Battle events appear here -->
+                    </div>
+                </div>
+
+                <!-- Action Selection -->
+                <div class="pvp-actions glass-panel">
+                    <h4>Select Your Action</h4>
+                    <div class="action-grid">
+                        <button class="action-btn action-basic" onclick="game.selectPvPAction('basic_attack')">
+                            <div class="action-name">⚔️ Basic Attack</div>
+                            <div class="action-desc">Deal 100% damage</div>
+                        </button>
+                        <button class="action-btn action-guard" onclick="game.selectPvPAction('guard')">
+                            <div class="action-name">🛡️ Guard</div>
+                            <div class="action-desc">Reduce damage by 50%, gain shield</div>
+                        </button>
+                    </div>
+
+                    <h4>Skills</h4>
+                    <div class="pvp-skill-buttons" id="pvp-active-skills">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div class="pvp-action-confirm">
+                        <button class="btn btn-primary" id="pvp-confirm-btn" onclick="game.confirmPvPAction()" disabled>
+                            Confirm Action
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PvP Results Screen -->
+        <div id="pvp-results-screen" class="screen">
+            <div class="glass-panel pvp-results-panel">
+                <h2 id="pvp-result-title">Victory!</h2>
+
+                <div class="pvp-results-content">
+                    <div class="result-summary">
+                        <div class="result-stat">
+                            <span class="label">Battle Duration:</span>
+                            <span id="pvp-battle-turns" class="value">10 turns</span>
+                        </div>
+                        <div class="result-stat">
+                            <span class="label">Damage Dealt:</span>
+                            <span id="pvp-damage-dealt" class="value">450</span>
+                        </div>
+                        <div class="result-stat">
+                            <span class="label">Damage Taken:</span>
+                            <span id="pvp-damage-taken" class="value">280</span>
+                        </div>
+                    </div>
+
+                    <div id="pvp-rank-change" class="rank-change">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="pvp-results-actions">
+                    <button class="btn btn-secondary" onclick="game.showPvPLobby()">Back to Lobby</button>
+                    <button class="btn btn-primary" onclick="game.selectPvPMode(game.pvpSystem.currentMatch?.isRanked ? 'ranked' : 'practice')">Battle Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="pvp.js"></script>
+    <script src="multiplayer.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

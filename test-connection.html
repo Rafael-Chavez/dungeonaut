@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeonaut - Connection Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+        }
+        h1 { margin-top: 0; }
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .status.connecting { background: rgba(245, 158, 11, 0.3); }
+        .status.connected { background: rgba(16, 185, 129, 0.3); }
+        .status.error { background: rgba(239, 68, 68, 0.3); }
+        button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { opacity: 0.9; }
+        #log {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Multiplayer Connection Test</h1>
+
+        <div id="status" class="status connecting">
+            Disconnected
+        </div>
+
+        <div>
+            <input type="text" id="serverUrl" placeholder="ws://localhost:8080"
+                   style="padding: 10px; border-radius: 8px; border: none; width: 300px;">
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="testPing()">Test Ping</button>
+            <button onclick="joinQueue()">Join Queue</button>
+            <button onclick="getStats()">Get Stats</button>
+        </div>
+
+        <div id="log">
+            <div class="log-entry">Connection log will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        const statusEl = document.getElementById('status');
+        const logEl = document.getElementById('log');
+
+        function log(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function connect() {
+            const url = document.getElementById('serverUrl').value || 'ws://localhost:8080';
+
+            log(`Connecting to ${url}...`);
+            statusEl.textContent = 'Connecting...';
+            statusEl.className = 'status connecting';
+
+            ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                log('✅ Connected to server!');
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status connected';
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log(`📨 Received: ${data.type} - ${JSON.stringify(data)}`);
+            };
+
+            ws.onerror = (error) => {
+                log('❌ Connection error');
+                statusEl.textContent = 'Connection Error';
+                statusEl.className = 'status error';
+            };
+
+            ws.onclose = () => {
+                log('⚠️ Disconnected from server');
+                statusEl.textContent = 'Disconnected';
+                statusEl.className = 'status error';
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                log('Disconnecting...');
+            }
+        }
+
+        function send(message) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(message));
+                log(`📤 Sent: ${message.type}`);
+            } else {
+                log('❌ Not connected!');
+            }
+        }
+
+        function testPing() {
+            send({ type: 'ping' });
+        }
+
+        function joinQueue() {
+            send({ type: 'join_queue', queueType: 'unranked' });
+        }
+
+        function getStats() {
+            send({ type: 'get_stats' });
+        }
+
+        // Auto-connect on load
+        setTimeout(() => connect(), 500);
+    </script>
+</body>
+</html>
