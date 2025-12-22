@@ -7,14 +7,17 @@ A browser-based roguelike speedrunning game where you optimize builds and routes
 ### Single Player / Local AI
 Simply open `index.html` in your web browser to start playing. No installation required!
 
-### Online Multiplayer
+### Online Multiplayer (Local Development)
 1. Install Node.js (if not already installed)
 2. Run `npm install` to install dependencies
 3. Start the server: `npm start`
 4. Open `index.html` in your browser
 5. Challenge real players online!
 
-See [MULTIPLAYER_SETUP.md](MULTIPLAYER_SETUP.md) for detailed instructions.
+See [MULTIPLAYER_SETUP.md](MULTIPLAYER_SETUP.md) for local setup.
+
+### Deploy to Production
+Hosting on Vercel or another platform? See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) for complete deployment instructions.
 
 ## 🎯 Game Features
 

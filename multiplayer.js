@@ -13,12 +13,26 @@ class MultiplayerClient {
     }
 
     // ===== CONNECTION =====
-    connect(serverUrl = 'ws://localhost:8080') {
+    connect(serverUrl = null) {
+        // Auto-detect server URL based on environment
+        if (!serverUrl) {
+            // In production, use your Railway/Render WebSocket URL
+            // For local development, use localhost
+            const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+
+            if (isProduction) {
+                // REPLACE THIS with your deployed WebSocket server URL
+                serverUrl = 'wss://YOUR-APP-NAME.up.railway.app'; // or wss://your-app.onrender.com
+            } else {
+                serverUrl = 'ws://localhost:8080';
+            }
+        }
+
         if (this.ws) {
             this.ws.close();
         }
 
-        console.log('Connecting to multiplayer server...');
+        console.log('Connecting to multiplayer server:', serverUrl);
 
         this.ws = new WebSocket(serverUrl);
 
