@@ -1194,7 +1194,7 @@ class DungeonAutGame {
     initializeMultiplayer() {
         this.multiplayerClient = new MultiplayerClient(this);
         // Try to connect (will use localhost by default, can be changed)
-        const serverUrl = localStorage.getItem('dungeonaut_server_url') || 'ws://localhost:8080';
+        const serverUrl = localStorage.getItem('dungeonaut_server_url') || 'ws://localhost:10000';
         this.multiplayerClient.connect(serverUrl);
     }
 

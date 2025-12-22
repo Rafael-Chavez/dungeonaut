@@ -68,7 +68,7 @@
         </div>
 
         <div>
-            <input type="text" id="serverUrl" placeholder="ws://localhost:8080"
+            <input type="text" id="serverUrl" placeholder="ws://localhost:10000"
                    style="padding: 10px; border-radius: 8px; border: none; width: 300px;">
             <button onclick="connect()">Connect</button>
             <button onclick="disconnect()">Disconnect</button>
@@ -99,7 +99,7 @@
         }
 
         function connect() {
-            const url = document.getElementById('serverUrl').value || 'ws://localhost:8080';
+            const url = document.getElementById('serverUrl').value || 'ws://localhost:10000';
 
             log(`Connecting to ${url}...`);
             statusEl.textContent = 'Connecting...';
