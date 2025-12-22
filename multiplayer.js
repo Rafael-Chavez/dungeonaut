@@ -24,7 +24,7 @@ class MultiplayerClient {
                 // REPLACE THIS with your deployed WebSocket server URL
                 serverUrl = 'wss://dungeonaut-server.onrender.com'; // WebSocket Secure protocol
             } else {
-                serverUrl = 'ws://localhost:8080';
+                serverUrl = 'ws://localhost:10000';
             }
         }
 
