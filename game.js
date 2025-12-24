@@ -1022,6 +1022,9 @@ class DungeonAutGame {
     }
 
     selectPvPAction(actionId) {
+        // Clear previous selection first
+        this.selectedPvPAction = null;
+
         if (actionId === 'basic_attack') {
             this.selectedPvPAction = { id: 'basic_attack', name: 'Basic Attack', priority: 'normal' };
         } else if (actionId === 'guard') {
@@ -1033,6 +1036,7 @@ class DungeonAutGame {
             }
         }
 
+        // Update UI
         document.getElementById('pvp-confirm-btn').disabled = !this.selectedPvPAction;
         this.highlightSelectedAction();
     }
@@ -1186,6 +1190,67 @@ class DungeonAutGame {
 
         document.getElementById('pvp-battle-turns').textContent = `${match.turn} turns`;
 
+        // Calculate and display stats
+        let damageDealt = 0;
+        let damageTaken = 0;
+        let critsLanded = 0;
+        let skillsUsed = { You: {}, Rival: {} };
+
+        match.battleLog.forEach(turnLog => {
+            turnLog.events.forEach(event => {
+                if (event.damage && event.damage > 0) {
+                    // Track damage dealt by checking who the target is
+                    if (event.target === 'Rival') {
+                        damageDealt += event.damage;
+                    } else if (event.target === 'You') {
+                        damageTaken += event.damage;
+                    }
+
+                    // Track crits
+                    if (event.isCrit) {
+                        critsLanded++;
+                    }
+                }
+
+                // Track skill usage
+                if (event.actionName && event.type === 'skill') {
+                    const actor = event.message.startsWith('You') ? 'You' : 'Rival';
+                    if (!skillsUsed[actor][event.actionName]) {
+                        skillsUsed[actor][event.actionName] = 0;
+                    }
+                    skillsUsed[actor][event.actionName]++;
+                }
+            });
+        });
+
+        document.getElementById('pvp-damage-dealt').textContent = damageDealt;
+        document.getElementById('pvp-damage-taken').textContent = damageTaken;
+
+        // Generate full battle log
+        const logHtml = match.battleLog.map((turnLog, index) => {
+            const eventsHtml = turnLog.events.map(event => {
+                const critClass = event.isCrit ? ' crit-event' : '';
+                return `<div class="log-event${critClass}">${event.message}${event.bonusMessage || ''}${event.statusEffect ? ' (' + event.statusEffect + ')' : ''}${event.selfEffect ? ' (' + event.selfEffect + ')' : ''}</div>`;
+            }).join('');
+
+            return `
+                <div class="turn-log-block">
+                    <div class="turn-header">Turn ${turnLog.turn}</div>
+                    <div class="turn-events">${eventsHtml}</div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('pvp-full-battle-log').innerHTML = logHtml + `
+            <div class="battle-stats-summary">
+                <h4>Battle Statistics</h4>
+                <div class="stat-row"><span>Total Turns:</span> <span>${match.turn}</span></div>
+                <div class="stat-row"><span>Damage Dealt:</span> <span>${damageDealt}</span></div>
+                <div class="stat-row"><span>Damage Taken:</span> <span>${damageTaken}</span></div>
+                <div class="stat-row"><span>Critical Hits:</span> <span>${critsLanded} 💥</span></div>
+            </div>
+        `;
+
         // Save result
         this.pvpSystem.savePvPResult(match.winner, isVictory ? 'Rival' : 'You', match.turn);
     }
@@ -1210,6 +1275,15 @@ class DungeonAutGame {
         const usernameElem = document.getElementById('username-display');
         if (usernameElem) {
             usernameElem.textContent = `Playing as: ${username}`;
+        }
+    }
+
+    changeUsername() {
+        if (!this.multiplayerClient) return;
+
+        const newUsername = prompt('Enter your new username:', this.multiplayerClient.username || '');
+        if (newUsername && newUsername.trim()) {
+            this.multiplayerClient.setUsername(newUsername.trim());
         }
     }
 
@@ -1370,9 +1444,23 @@ class DungeonAutGame {
     resolveOnlineTurn(message) {
         const match = this.pvpSystem.currentMatch;
 
+        // Convert action IDs back to full action objects
+        const convertAction = (actionId) => {
+            if (actionId === 'basic_attack') {
+                return { id: 'basic_attack', name: 'Basic Attack', priority: 'normal' };
+            } else if (actionId === 'guard') {
+                return { id: 'guard', name: 'Guard', priority: 'high' };
+            } else {
+                // Find the skill in the PvP skills list
+                const allSkills = this.pvpSystem.getPvPSkills();
+                const skill = allSkills.find(s => s.id === actionId);
+                return skill || { id: actionId, name: 'Unknown', priority: 'normal' };
+            }
+        };
+
         // Resolve turn with both actions
-        match.player.selectedAction = message.yourAction;
-        match.opponent.selectedAction = message.opponentAction;
+        match.player.selectedAction = convertAction(message.yourAction);
+        match.opponent.selectedAction = convertAction(message.opponentAction);
 
         const turnLog = this.pvpSystem.resolveTurn();
         this.updatePvPBattleUI();
@@ -1383,6 +1471,7 @@ class DungeonAutGame {
         document.getElementById('pvp-confirm-btn').disabled = true;
         document.querySelectorAll('.action-btn, .pvp-skill-btn').forEach(btn => {
             btn.disabled = false;
+            btn.classList.remove('selected');
         });
 
         if (match.winner) {

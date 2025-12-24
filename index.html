@@ -279,6 +279,7 @@
                 <div class="multiplayer-status" id="multiplayer-status">
                     <span id="connection-status">Connecting...</span>
                     <span id="username-display"></span>
+                    <button class="btn-small" onclick="game.changeUsername()" style="margin-left: 10px;">Change Name</button>
                 </div>
 
                 <div class="pvp-mode-selection">
@@ -462,11 +463,11 @@
                 <div class="pvp-actions glass-panel">
                     <h4>Select Your Action</h4>
                     <div class="action-grid">
-                        <button class="action-btn action-basic" onclick="game.selectPvPAction('basic_attack')">
+                        <button class="action-btn action-basic" data-action-id="basic_attack" onclick="game.selectPvPAction('basic_attack')">
                             <div class="action-name">⚔️ Basic Attack</div>
                             <div class="action-desc">Deal 100% damage</div>
                         </button>
-                        <button class="action-btn action-guard" onclick="game.selectPvPAction('guard')">
+                        <button class="action-btn action-guard" data-action-id="guard" onclick="game.selectPvPAction('guard')">
                             <div class="action-name">🛡️ Guard</div>
                             <div class="action-desc">Reduce damage by 50%, gain shield</div>
                         </button>
@@ -510,6 +511,13 @@
                     <div id="pvp-rank-change" class="rank-change">
                         <!-- Populated by JS -->
                     </div>
+
+                    <div class="battle-log-section">
+                        <h3>📜 Battle Log</h3>
+                        <div id="pvp-full-battle-log" class="full-battle-log">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
                 </div>
 
                 <div class="pvp-results-actions">
@@ -520,8 +528,9 @@
         </div>
     </div>
 
-    <script src="pvp.js?v=4"></script>
-    <script src="multiplayer.js?v=4"></script>
-    <script src="game.js?v=4"></script>
+    <script src="pvp.js?v=8"></script>
+    <script src="multiplayer.js?v=8"></script>
+    <script src="game.js?v=8"></script>
+    <link rel="stylesheet" href="styles.css?v=8">
 </body>
 </html>

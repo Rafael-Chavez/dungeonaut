@@ -487,39 +487,44 @@ class PvPSystem {
     }
 
     executeBasicAttack(attacker, defender) {
-        const damage = this.calculateDamage(attacker, defender, attacker.attack, 'basic');
-
         // Check dodge
         if (defender.status.dodging) {
             defender.status.dodging = 0;
             const counterDamage = Math.floor(attacker.attack * 0.6);
             attacker.hp -= counterDamage;
             return {
-                message: `${defender.name} dodges ${attacker.name}'s attack and counters for ${counterDamage} damage!`,
+                message: `${defender.name} dodges ${attacker.name}'s Basic Attack and counters for ${counterDamage} damage!`,
                 type: 'counter',
                 damage: counterDamage,
-                target: attacker.name
+                target: attacker.name,
+                actionName: 'Basic Attack'
             };
         }
 
-        defender.hp -= damage;
+        const damageResult = this.calculateDamage(attacker, defender, attacker.attack, 'basic');
+        defender.hp -= damageResult.damage;
         if (defender.hp < 0) defender.hp = 0;
 
+        const critText = damageResult.isCrit ? ' 💥 CRITICAL HIT!' : '';
         return {
-            message: `${attacker.name} attacks for ${damage} damage!`,
+            message: `${attacker.name} uses Basic Attack for ${damageResult.damage} damage!${critText}`,
             type: 'attack',
-            damage: damage,
-            target: defender.name
+            damage: damageResult.damage,
+            target: defender.name,
+            isCrit: damageResult.isCrit,
+            actionName: 'Basic Attack'
         };
     }
 
     executeGuard(actor) {
         actor.status.guarding = 1;
-        actor.shield += Math.floor(actor.maxHp * 0.2);
+        const shieldGain = Math.floor(actor.maxHp * 0.2);
+        actor.shield += shieldGain;
         return {
-            message: `${actor.name} takes a defensive stance!`,
+            message: `${actor.name} uses Guard! Gains ${shieldGain} shield!`,
             type: 'defense',
-            effect: 'Guarding (+20% shield)'
+            effect: 'Guarding (+20% shield)',
+            actionName: 'Guard'
         };
     }
 
@@ -527,13 +532,15 @@ class PvPSystem {
         // Check if silenced
         if (attacker.status.silenced) {
             return {
-                message: `${attacker.name} is silenced and cannot use skills!`,
-                type: 'blocked'
+                message: `${attacker.name} is silenced and cannot use ${skill.name}!`,
+                type: 'blocked',
+                actionName: skill.name
             };
         }
 
         // Execute skill
         const result = skill.execute(attacker, defender);
+        result.actionName = skill.name;
 
         // Apply type advantage
         const typeMultiplier = this.getTypeMatchup(skill.type, defender.dominantType || 'sustain');
@@ -541,12 +548,21 @@ class PvPSystem {
             result.damage = Math.floor(result.damage * typeMultiplier);
         }
 
-        // Apply damage
+        // Apply damage with crit check
         if (result.damage) {
-            const finalDamage = this.calculateDamage(attacker, defender, result.damage, skill.type);
-            defender.hp -= finalDamage;
+            const damageResult = this.calculateDamage(attacker, defender, result.damage, skill.type);
+            defender.hp -= damageResult.damage;
             if (defender.hp < 0) defender.hp = 0;
-            result.finalDamage = finalDamage;
+
+            result.finalDamage = damageResult.damage;
+            result.isCrit = damageResult.isCrit;
+
+            // Update message with crit indicator and actual damage
+            if (damageResult.isCrit) {
+                result.message += ` Deals ${damageResult.damage} damage! 💥 CRITICAL HIT!`;
+            } else if (damageResult.damage > 0) {
+                result.message += ` Deals ${damageResult.damage} damage!`;
+            }
         }
 
         result.type = 'skill';
@@ -556,10 +572,12 @@ class PvPSystem {
 
     calculateDamage(attacker, defender, baseDamage, damageType) {
         let damage = baseDamage;
+        let isCrit = false;
 
         // Check for crit
         if (Math.random() < attacker.critChance) {
             damage *= 1.5;
+            isCrit = true;
         }
 
         // Apply vulnerable status
@@ -577,14 +595,14 @@ class PvPSystem {
         if (defender.shield > 0) {
             if (defender.shield >= damage) {
                 defender.shield -= damage;
-                return 0;
+                return { damage: 0, isCrit: isCrit };
             } else {
                 damage -= defender.shield;
                 defender.shield = 0;
             }
         }
 
-        return Math.floor(damage);
+        return { damage: Math.floor(damage), isCrit: isCrit };
     }
 
     updateStatusEffects(fighter) {
