@@ -1191,12 +1191,12 @@ class DungeonAutGame {
     }
 
     // ===== MULTIPLAYER METHODS =====
-    initializeMultiplayer() {
-        this.multiplayerClient = new MultiplayerClient(this);
-        // Try to connect (will use localhost by default, can be changed)
-        const serverUrl = localStorage.getItem('dungeonaut_server_url') || 'ws://localhost:10000';
-        this.multiplayerClient.connect(serverUrl);
-    }
+  initializeMultiplayer() {
+    this.multiplayerClient = new MultiplayerClient(this);
+    // Replace YOUR_RENDER_APP_NAME with your actual Render app name
+    const serverUrl = localStorage.getItem('dungeonaut_server_url') || 'wss://dungeonaut-server.onrender.com';
+    this.multiplayerClient.connect(serverUrl);
+}
 
     showMultiplayerStatus(message, type) {
         const statusElem = document.getElementById('connection-status');
