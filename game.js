@@ -13,6 +13,15 @@ class DungeonAutGame {
         };
         this.pvpSelectedSkills = [];
         this.selectedPvPAction = null;
+
+        // Loadout system
+        this.pvpLoadouts = this.loadPvPLoadouts();
+
+        // Arena stats tracking
+        this.arenaStats = this.loadArenaStats();
+
+        // Achievement system
+        this.achievements = this.loadAchievements();
     }
 
     initializeState() {
@@ -898,14 +907,71 @@ class DungeonAutGame {
     }
 
     updatePvPStats() {
-        const stats = this.state.pvpLeaderboard || { ranked: [], unranked: [] };
-        const wins = stats.ranked.filter(e => e.result === 'win').length;
-        const losses = stats.ranked.filter(e => e.result === 'loss').length;
+        const wins = this.arenaStats.wins;
+        const losses = this.arenaStats.losses;
         const winRate = wins + losses > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : 0;
 
         document.getElementById('pvp-wins').textContent = wins;
         document.getElementById('pvp-losses').textContent = losses;
         document.getElementById('pvp-winrate').textContent = winRate + '%';
+    }
+
+    showArenaStats() {
+        this.showScreen('arena-stats-screen');
+        this.renderArenaStats();
+        this.renderAchievements();
+    }
+
+    renderArenaStats() {
+        const stats = this.arenaStats;
+        const mostUsed = this.getMostUsedSkill();
+        const winRate = stats.wins + stats.losses > 0 ?
+            ((stats.wins / (stats.wins + stats.losses)) * 100).toFixed(1) : 0;
+
+        // Career Stats
+        document.getElementById('stat-total-matches').textContent = stats.totalMatches;
+        document.getElementById('stat-wins').textContent = stats.wins;
+        document.getElementById('stat-losses').textContent = stats.losses;
+        document.getElementById('stat-draws').textContent = stats.draws;
+        document.getElementById('stat-winrate').textContent = winRate + '%';
+        document.getElementById('stat-best-streak').textContent = stats.bestWinStreak;
+
+        // Combat Stats
+        document.getElementById('stat-total-damage').textContent = stats.totalDamageDealt;
+        document.getElementById('stat-total-taken').textContent = stats.totalDamageTaken;
+        document.getElementById('stat-total-healing').textContent = stats.totalHealingDone;
+        document.getElementById('stat-total-crits').textContent = stats.totalCrits;
+        document.getElementById('stat-highest-damage').textContent = stats.highestDamageDealt;
+        document.getElementById('stat-highest-taken').textContent = stats.highestDamageTaken;
+        document.getElementById('stat-longest-match').textContent = stats.longestMatch + ' turns';
+        document.getElementById('stat-shortest-win').textContent =
+            (stats.shortestWin === 999 ? 'N/A' : stats.shortestWin + ' turns');
+        document.getElementById('stat-most-used-skill').textContent =
+            `${mostUsed.name}${mostUsed.uses > 0 ? ' (' + mostUsed.uses + 'x)' : ''}`;
+    }
+
+    renderAchievements() {
+        const container = document.getElementById('achievements-grid');
+        const allAchievements = this.getAllAchievements();
+
+        let html = '';
+        allAchievements.forEach(ach => {
+            const unlocked = this.achievements[ach.id].unlocked;
+            const lockedClass = unlocked ? 'unlocked' : 'locked';
+
+            html += `
+                <div class="achievement-card ${lockedClass}">
+                    <div class="achievement-icon-large">${ach.icon}</div>
+                    <div class="achievement-details">
+                        <div class="achievement-name">${ach.name}</div>
+                        <div class="achievement-desc">${ach.desc}</div>
+                        ${unlocked ? `<div class="achievement-date">Unlocked: ${new Date(this.achievements[ach.id].unlockedAt).toLocaleDateString()}</div>` : '<div class="achievement-locked-msg">🔒 Locked</div>'}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
     }
 
     selectPvPMode(mode) {
@@ -1171,6 +1237,11 @@ class DungeonAutGame {
             entry.className = `log-entry log-${event.type || 'info'}`;
             entry.textContent = `[Turn ${turnLog.turn}] ${event.message}`;
             container.appendChild(entry);
+
+            // Trigger crit animation on HP bars
+            if (event.isCrit) {
+                this.triggerCritAnimation(event.target);
+            }
         });
 
         container.scrollTop = container.scrollHeight;
@@ -1179,6 +1250,23 @@ class DungeonAutGame {
         while (container.children.length > 30) {
             container.removeChild(container.firstChild);
         }
+    }
+
+    triggerCritAnimation(target) {
+        // Determine which HP bar to animate
+        const hpBarId = target === 'Rival' || target === 'opponent' ?
+            'pvp-opponent-hp-fill' : 'pvp-player-hp-fill';
+
+        const hpBar = document.getElementById(hpBarId);
+        if (!hpBar) return;
+
+        // Add crit animation class
+        hpBar.closest('.fighter-display').classList.add('crit-hit');
+
+        // Remove the class after animation completes
+        setTimeout(() => {
+            hpBar.closest('.fighter-display').classList.remove('crit-hit');
+        }, 600);
     }
 
     endPvPBattle(match) {
@@ -1238,6 +1326,17 @@ class DungeonAutGame {
         document.getElementById('pvp-damage-dealt').textContent = damageDealt;
         document.getElementById('pvp-damage-taken').textContent = damageTaken;
         document.getElementById('pvp-healing-done').textContent = healingDone;
+
+        // Update arena stats
+        this.updateArenaStats(match, damageDealt, damageTaken, healingDone, critsLanded);
+
+        // Check for flawless victory achievement
+        if (isVictory && damageTaken === 0 && !this.achievements['flawless'].unlocked) {
+            this.achievements['flawless'].unlocked = true;
+            this.achievements['flawless'].unlockedAt = new Date().toISOString();
+            this.saveAchievements();
+            this.showAchievementPopup(this.getAllAchievements().find(a => a.id === 'flawless'));
+        }
 
         // Generate full battle log
         const logHtml = match.battleLog.map((turnLog, index) => {
@@ -1531,6 +1630,300 @@ class DungeonAutGame {
         entry.textContent = message;
         container.appendChild(entry);
         container.scrollTop = container.scrollHeight;
+    }
+
+    // ===== LOADOUT SYSTEM =====
+    loadPvPLoadouts() {
+        const saved = localStorage.getItem('dungeonaut_pvp_loadouts');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error('Failed to load loadouts:', e);
+            }
+        }
+
+        // Default loadouts
+        return {
+            slot1: this.getPresetLoadout('Tank'),
+            slot2: this.getPresetLoadout('DPS'),
+            slot3: this.getPresetLoadout('Balanced'),
+            slot4: this.getPresetLoadout('Support'),
+            slot5: this.getPresetLoadout('Glass Cannon')
+        };
+    }
+
+    getPresetLoadout(name) {
+        const skills = this.pvpSystem ? this.pvpSystem.getPvPSkills() : [];
+
+        const presets = {
+            'Tank': {
+                name: 'Tank',
+                stats: { strength: 2, vitality: 5, agility: 1, luck: 2 },
+                skills: ['regeneration', 'shield_wall', 'taunt', 'iron_skin'].map(id =>
+                    skills.find(s => s.id === id)).filter(s => s)
+            },
+            'DPS': {
+                name: 'DPS',
+                stats: { strength: 5, vitality: 1, agility: 2, luck: 2 },
+                skills: ['shadow_strike', 'execute', 'blood_rage', 'critical_surge'].map(id =>
+                    skills.find(s => s.id === id)).filter(s => s)
+            },
+            'Balanced': {
+                name: 'Balanced',
+                stats: { strength: 3, vitality: 3, agility: 2, luck: 2 },
+                skills: ['shadow_strike', 'regeneration', 'flash_step', 'time_warp'].map(id =>
+                    skills.find(s => s.id === id)).filter(s => s)
+            },
+            'Support': {
+                name: 'Support',
+                stats: { strength: 1, vitality: 4, agility: 2, luck: 3 },
+                skills: ['regeneration', 'blessing', 'mana_shield', 'cleanse'].map(id =>
+                    skills.find(s => s.id === id)).filter(s => s)
+            },
+            'Glass Cannon': {
+                name: 'Glass Cannon',
+                stats: { strength: 6, vitality: 0, agility: 2, luck: 2 },
+                skills: ['shadow_strike', 'execute', 'blood_rage', 'desperate_strike'].map(id =>
+                    skills.find(s => s.id === id)).filter(s => s)
+            }
+        };
+
+        return presets[name] || presets['Balanced'];
+    }
+
+    saveLoadout(slotNumber, name, stats, skills) {
+        this.pvpLoadouts[`slot${slotNumber}`] = {
+            name: name,
+            stats: stats,
+            skills: skills
+        };
+        localStorage.setItem('dungeonaut_pvp_loadouts', JSON.stringify(this.pvpLoadouts));
+    }
+
+    loadLoadout(slotNumber) {
+        const loadout = this.pvpLoadouts[`slot${slotNumber}`];
+        if (!loadout) return;
+
+        // Apply stats
+        this.pvpStats = { ...loadout.stats };
+
+        // Apply skills
+        this.pvpSelectedSkills = [...loadout.skills];
+
+        // Update UI
+        this.updatePvPBuildUI();
+        this.renderPvPSkillSelection();
+
+        // Show notification
+        this.addPvPLog(`Loaded loadout: ${loadout.name}`);
+    }
+
+    // ===== ARENA STATS SYSTEM =====
+    loadArenaStats() {
+        const saved = localStorage.getItem('dungeonaut_arena_stats');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error('Failed to load arena stats:', e);
+            }
+        }
+
+        return {
+            totalMatches: 0,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            totalDamageDealt: 0,
+            totalDamageTaken: 0,
+            totalHealingDone: 0,
+            totalCrits: 0,
+            skillUsage: {},
+            highestDamageDealt: 0,
+            highestDamageTaken: 0,
+            longestMatch: 0,
+            shortestWin: 999,
+            winStreak: 0,
+            bestWinStreak: 0,
+            currentStreak: 0
+        };
+    }
+
+    saveArenaStats() {
+        localStorage.setItem('dungeonaut_arena_stats', JSON.stringify(this.arenaStats));
+    }
+
+    updateArenaStats(match, damageDealt, damageTaken, healingDone, critsLanded) {
+        this.arenaStats.totalMatches++;
+
+        if (match.winner === 'You') {
+            this.arenaStats.wins++;
+            this.arenaStats.currentStreak++;
+            if (this.arenaStats.currentStreak > this.arenaStats.bestWinStreak) {
+                this.arenaStats.bestWinStreak = this.arenaStats.currentStreak;
+            }
+            if (match.turn < this.arenaStats.shortestWin) {
+                this.arenaStats.shortestWin = match.turn;
+            }
+        } else if (match.winner === 'Rival') {
+            this.arenaStats.losses++;
+            this.arenaStats.currentStreak = 0;
+        } else {
+            this.arenaStats.draws++;
+        }
+
+        this.arenaStats.totalDamageDealt += damageDealt;
+        this.arenaStats.totalDamageTaken += damageTaken;
+        this.arenaStats.totalHealingDone += healingDone;
+        this.arenaStats.totalCrits += critsLanded;
+
+        if (damageDealt > this.arenaStats.highestDamageDealt) {
+            this.arenaStats.highestDamageDealt = damageDealt;
+        }
+        if (damageTaken > this.arenaStats.highestDamageTaken) {
+            this.arenaStats.highestDamageTaken = damageTaken;
+        }
+        if (match.turn > this.arenaStats.longestMatch) {
+            this.arenaStats.longestMatch = match.turn;
+        }
+
+        // Track skill usage
+        match.battleLog.forEach(turnLog => {
+            turnLog.events.forEach(event => {
+                if (event.actionName && event.message.startsWith('You') && event.type === 'skill') {
+                    if (!this.arenaStats.skillUsage[event.actionName]) {
+                        this.arenaStats.skillUsage[event.actionName] = 0;
+                    }
+                    this.arenaStats.skillUsage[event.actionName]++;
+                }
+            });
+        });
+
+        this.saveArenaStats();
+        this.checkAchievements();
+    }
+
+    getMostUsedSkill() {
+        let maxUses = 0;
+        let mostUsed = 'None';
+
+        Object.keys(this.arenaStats.skillUsage).forEach(skillName => {
+            if (this.arenaStats.skillUsage[skillName] > maxUses) {
+                maxUses = this.arenaStats.skillUsage[skillName];
+                mostUsed = skillName;
+            }
+        });
+
+        return { name: mostUsed, uses: maxUses };
+    }
+
+    // ===== ACHIEVEMENT SYSTEM =====
+    loadAchievements() {
+        const saved = localStorage.getItem('dungeonaut_achievements');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error('Failed to load achievements:', e);
+            }
+        }
+
+        // Initialize all achievements as locked
+        const achievements = {};
+        this.getAllAchievements().forEach(ach => {
+            achievements[ach.id] = { unlocked: false, unlockedAt: null };
+        });
+        return achievements;
+    }
+
+    getAllAchievements() {
+        return [
+            // Win-based
+            { id: 'first_win', name: 'First Blood', desc: 'Win your first PvP match', icon: '🏆', condition: () => this.arenaStats.wins >= 1 },
+            { id: 'win_10', name: 'Veteran', desc: 'Win 10 PvP matches', icon: '⚔️', condition: () => this.arenaStats.wins >= 10 },
+            { id: 'win_50', name: 'Champion', desc: 'Win 50 PvP matches', icon: '👑', condition: () => this.arenaStats.wins >= 50 },
+            { id: 'win_100', name: 'Legend', desc: 'Win 100 PvP matches', icon: '🌟', condition: () => this.arenaStats.wins >= 100 },
+
+            // Streak-based
+            { id: 'streak_3', name: 'Hot Streak', desc: 'Win 3 matches in a row', icon: '🔥', condition: () => this.arenaStats.bestWinStreak >= 3 },
+            { id: 'streak_5', name: 'Unstoppable', desc: 'Win 5 matches in a row', icon: '💪', condition: () => this.arenaStats.bestWinStreak >= 5 },
+            { id: 'streak_10', name: 'Godlike', desc: 'Win 10 matches in a row', icon: '😇', condition: () => this.arenaStats.bestWinStreak >= 10 },
+
+            // Damage-based
+            { id: 'damage_500', name: 'Heavy Hitter', desc: 'Deal 500 damage in one match', icon: '💥', condition: () => this.arenaStats.highestDamageDealt >= 500 },
+            { id: 'damage_1000', name: 'Destroyer', desc: 'Deal 1000 damage in one match', icon: '💀', condition: () => this.arenaStats.highestDamageDealt >= 1000 },
+
+            // Crit-based
+            { id: 'crit_10', name: 'Lucky Strike', desc: 'Land 10 crits in total', icon: '🎯', condition: () => this.arenaStats.totalCrits >= 10 },
+            { id: 'crit_50', name: 'Precision', desc: 'Land 50 crits in total', icon: '🎲', condition: () => this.arenaStats.totalCrits >= 50 },
+
+            // Survival-based
+            { id: 'tank_500', name: 'Iron Wall', desc: 'Take 500 damage in one match and win', icon: '🛡️', condition: () => this.arenaStats.highestDamageTaken >= 500 },
+            { id: 'healer', name: 'Combat Medic', desc: 'Heal 1000 HP in total', icon: '💚', condition: () => this.arenaStats.totalHealingDone >= 1000 },
+
+            // Match length
+            { id: 'quick_win', name: 'Speed Demon', desc: 'Win a match in under 5 turns', icon: '⚡', condition: () => this.arenaStats.shortestWin <= 5 },
+            { id: 'marathon', name: 'Marathon Fighter', desc: 'Fight a match lasting 25+ turns', icon: '⏱️', condition: () => this.arenaStats.longestMatch >= 25 },
+
+            // Perfect
+            { id: 'flawless', name: 'Flawless Victory', desc: 'Win without taking any damage', icon: '✨', condition: () => false } // Checked separately
+        ];
+    }
+
+    saveAchievements() {
+        localStorage.setItem('dungeonaut_achievements', JSON.stringify(this.achievements));
+    }
+
+    checkAchievements() {
+        const allAchievements = this.getAllAchievements();
+        const newlyUnlocked = [];
+
+        allAchievements.forEach(ach => {
+            if (!this.achievements[ach.id].unlocked && ach.condition()) {
+                this.achievements[ach.id].unlocked = true;
+                this.achievements[ach.id].unlockedAt = new Date().toISOString();
+                newlyUnlocked.push(ach);
+            }
+        });
+
+        if (newlyUnlocked.length > 0) {
+            this.saveAchievements();
+            this.showAchievementNotifications(newlyUnlocked);
+        }
+    }
+
+    showAchievementNotifications(achievements) {
+        achievements.forEach((ach, index) => {
+            setTimeout(() => {
+                this.showAchievementPopup(ach);
+            }, index * 2000);
+        });
+    }
+
+    showAchievementPopup(achievement) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'achievement-popup';
+        notification.innerHTML = `
+            <div class="achievement-icon">${achievement.icon}</div>
+            <div class="achievement-content">
+                <div class="achievement-title">Achievement Unlocked!</div>
+                <div class="achievement-name">${achievement.name}</div>
+                <div class="achievement-desc">${achievement.desc}</div>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        // Remove after 4 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 500);
+        }, 4000);
     }
 }
 

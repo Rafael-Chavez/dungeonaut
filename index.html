@@ -327,7 +327,103 @@
                 </div>
 
                 <div class="pvp-lobby-actions">
+                    <button class="btn btn-secondary" onclick="game.showArenaStats()">📊 View Full Stats & Achievements</button>
                     <button class="btn btn-secondary" onclick="game.showMainMenu()">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arena Stats & Achievements Screen -->
+        <div id="arena-stats-screen" class="screen">
+            <div class="glass-panel arena-stats-panel">
+                <h2>📊 Arena Statistics & Achievements</h2>
+
+                <div class="arena-content">
+                    <!-- Overall Stats -->
+                    <div class="section">
+                        <h3>🏆 Career Stats</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Matches</div>
+                                <div class="stat-value" id="stat-total-matches">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Wins</div>
+                                <div class="stat-value wins" id="stat-wins">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Losses</div>
+                                <div class="stat-value losses" id="stat-losses">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Draws</div>
+                                <div class="stat-value" id="stat-draws">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Win Rate</div>
+                                <div class="stat-value" id="stat-winrate">0%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Best Win Streak</div>
+                                <div class="stat-value streak" id="stat-best-streak">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Combat Stats -->
+                    <div class="section">
+                        <h3>⚔️ Combat Stats</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Damage Dealt</div>
+                                <div class="stat-value" id="stat-total-damage">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Total Damage Taken</div>
+                                <div class="stat-value" id="stat-total-taken">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Total Healing</div>
+                                <div class="stat-value heal" id="stat-total-healing">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Total Crits</div>
+                                <div class="stat-value crit" id="stat-total-crits">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Highest Damage (Single Match)</div>
+                                <div class="stat-value highlight" id="stat-highest-damage">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Most Damage Taken (Single Match)</div>
+                                <div class="stat-value" id="stat-highest-taken">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Longest Match</div>
+                                <div class="stat-value" id="stat-longest-match">0 turns</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Shortest Win</div>
+                                <div class="stat-value" id="stat-shortest-win">0 turns</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Most Used Skill</div>
+                                <div class="stat-value" id="stat-most-used-skill">None</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Achievements -->
+                    <div class="section">
+                        <h3>🏅 Achievements</h3>
+                        <div id="achievements-grid" class="achievements-grid">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arena-stats-actions">
+                    <button class="btn btn-secondary" onclick="game.showPvPLobby()">Back to Arena</button>
                 </div>
             </div>
         </div>
@@ -397,6 +493,33 @@
                         </div>
                         <div class="stat-summary">
                             Points Remaining: <span id="pvp-points-remaining">10</span>
+                        </div>
+                    </div>
+
+                    <!-- Loadout Presets -->
+                    <div class="section">
+                        <h3>💾 Quick Loadouts</h3>
+                        <div class="loadout-buttons">
+                            <button class="loadout-btn" onclick="game.loadLoadout(1)">
+                                <div class="loadout-icon">🛡️</div>
+                                <div class="loadout-name">Tank</div>
+                            </button>
+                            <button class="loadout-btn" onclick="game.loadLoadout(2)">
+                                <div class="loadout-icon">⚔️</div>
+                                <div class="loadout-name">DPS</div>
+                            </button>
+                            <button class="loadout-btn" onclick="game.loadLoadout(3)">
+                                <div class="loadout-icon">⚖️</div>
+                                <div class="loadout-name">Balanced</div>
+                            </button>
+                            <button class="loadout-btn" onclick="game.loadLoadout(4)">
+                                <div class="loadout-icon">💚</div>
+                                <div class="loadout-name">Support</div>
+                            </button>
+                            <button class="loadout-btn" onclick="game.loadLoadout(5)">
+                                <div class="loadout-icon">💥</div>
+                                <div class="loadout-name">Glass Cannon</div>
+                            </button>
                         </div>
                     </div>
 
@@ -532,9 +655,9 @@
         </div>
     </div>
 
-    <script src="pvp.js?v=10"></script>
-    <script src="multiplayer.js?v=10"></script>
-    <script src="game.js?v=10"></script>
-    <link rel="stylesheet" href="styles.css?v=10">
+    <script src="pvp.js?v=12"></script>
+    <script src="multiplayer.js?v=12"></script>
+    <script src="game.js?v=12"></script>
+    <link rel="stylesheet" href="styles.css?v=12">
 </body>
 </html>
