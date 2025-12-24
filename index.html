@@ -373,30 +373,30 @@
                             <div class="stat-row">
                                 <label>Strength (Damage)</label>
                                 <button onclick="game.adjustPvPStat('strength', -1)">-</button>
-                                <span id="pvp-stat-strength">3</span>
+                                <span id="pvp-stat-strength">0</span>
                                 <button onclick="game.adjustPvPStat('strength', 1)">+</button>
                             </div>
                             <div class="stat-row">
                                 <label>Vitality (HP)</label>
                                 <button onclick="game.adjustPvPStat('vitality', -1)">-</button>
-                                <span id="pvp-stat-vitality">3</span>
+                                <span id="pvp-stat-vitality">0</span>
                                 <button onclick="game.adjustPvPStat('vitality', 1)">+</button>
                             </div>
                             <div class="stat-row">
                                 <label>Agility (Speed)</label>
                                 <button onclick="game.adjustPvPStat('agility', -1)">-</button>
-                                <span id="pvp-stat-agility">2</span>
+                                <span id="pvp-stat-agility">0</span>
                                 <button onclick="game.adjustPvPStat('agility', 1)">+</button>
                             </div>
                             <div class="stat-row">
                                 <label>Luck (Crit Chance)</label>
                                 <button onclick="game.adjustPvPStat('luck', -1)">-</button>
-                                <span id="pvp-stat-luck">2</span>
+                                <span id="pvp-stat-luck">0</span>
                                 <button onclick="game.adjustPvPStat('luck', 1)">+</button>
                             </div>
                         </div>
                         <div class="stat-summary">
-                            Points Remaining: <span id="pvp-points-remaining">0</span>
+                            Points Remaining: <span id="pvp-points-remaining">10</span>
                         </div>
                     </div>
 
@@ -506,6 +506,10 @@
                             <span class="label">Damage Taken:</span>
                             <span id="pvp-damage-taken" class="value">280</span>
                         </div>
+                        <div class="result-stat">
+                            <span class="label">Healing Done:</span>
+                            <span id="pvp-healing-done" class="value">0</span>
+                        </div>
                     </div>
 
                     <div id="pvp-rank-change" class="rank-change">
@@ -528,9 +532,9 @@
         </div>
     </div>
 
-    <script src="pvp.js?v=8"></script>
-    <script src="multiplayer.js?v=8"></script>
-    <script src="game.js?v=8"></script>
-    <link rel="stylesheet" href="styles.css?v=8">
+    <script src="pvp.js?v=10"></script>
+    <script src="multiplayer.js?v=10"></script>
+    <script src="game.js?v=10"></script>
+    <link rel="stylesheet" href="styles.css?v=10">
 </body>
 </html>

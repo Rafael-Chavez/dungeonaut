@@ -6,10 +6,10 @@ class DungeonAutGame {
         this.updateUI();
         this.pvpSystem = new PvPSystem(this);
         this.pvpStats = {
-            strength: 3,
-            vitality: 3,
-            agility: 2,
-            luck: 2
+            strength: 0,
+            vitality: 0,
+            agility: 0,
+            luck: 0
         };
         this.pvpSelectedSkills = [];
         this.selectedPvPAction = null;
@@ -1193,22 +1193,34 @@ class DungeonAutGame {
         // Calculate and display stats
         let damageDealt = 0;
         let damageTaken = 0;
+        let healingDone = 0;
         let critsLanded = 0;
         let skillsUsed = { You: {}, Rival: {} };
 
         match.battleLog.forEach(turnLog => {
             turnLog.events.forEach(event => {
-                if (event.damage && event.damage > 0) {
+                // Get damage from either damage or finalDamage field
+                const actualDamage = event.finalDamage || event.damage || 0;
+
+                if (actualDamage > 0) {
                     // Track damage dealt by checking who the target is
                     if (event.target === 'Rival') {
-                        damageDealt += event.damage;
+                        damageDealt += actualDamage;
                     } else if (event.target === 'You') {
-                        damageTaken += event.damage;
+                        damageTaken += actualDamage;
                     }
 
                     // Track crits
                     if (event.isCrit) {
                         critsLanded++;
+                    }
+                }
+
+                // Track healing
+                if (event.heal && event.heal > 0) {
+                    // Only track healing done by player
+                    if (event.message.startsWith('You')) {
+                        healingDone += event.heal;
                     }
                 }
 
@@ -1225,6 +1237,7 @@ class DungeonAutGame {
 
         document.getElementById('pvp-damage-dealt').textContent = damageDealt;
         document.getElementById('pvp-damage-taken').textContent = damageTaken;
+        document.getElementById('pvp-healing-done').textContent = healingDone;
 
         // Generate full battle log
         const logHtml = match.battleLog.map((turnLog, index) => {
