@@ -14,18 +14,9 @@ class MultiplayerClient {
 
     // ===== CONNECTION =====
     connect(serverUrl = null) {
-        // Auto-detect server URL based on environment
+        // Always connect to Render server
         if (!serverUrl) {
-            // In production, use your Railway/Render WebSocket URL
-            // For local development, use localhost
-            const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-
-            if (isProduction) {
-                // REPLACE THIS with your deployed WebSocket server URL
-                serverUrl = 'wss://dungeonaut-server.onrender.com'; // WebSocket Secure protocol
-            } else {
-                serverUrl = 'ws://localhost:10000';
-            }
+            serverUrl = 'wss://dungeonaut-server.onrender.com';
         }
 
         if (this.ws) {
