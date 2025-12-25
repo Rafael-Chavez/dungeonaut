@@ -200,7 +200,7 @@ class DungeonAutGame {
         const username = document.getElementById('register-username').value.trim();
         const email = document.getElementById('register-email').value.trim();
         const password = document.getElementById('register-password').value;
-        const confirmPassword = document.getElementById('register-confirm-password').value;
+        const confirmPassword = document.getElementById('register-password-confirm').value;
 
         if (!username || !email || !password || !confirmPassword) {
             alert('Please fill in all fields');
