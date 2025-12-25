@@ -131,10 +131,12 @@ class AuthSystem {
             const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
             const user = userCredential.user;
 
-            // Update last login
-            await this.db.collection('users').doc(user.uid).update({
+            // Update last login (or create user document if it doesn't exist)
+            await this.db.collection('users').doc(user.uid).set({
+                username: user.displayName || user.email.split('@')[0],
+                email: user.email,
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            }, { merge: true });
 
             return true;
         } catch (error) {
