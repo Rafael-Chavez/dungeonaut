@@ -22,6 +22,10 @@ class DungeonAutGame {
 
         // Achievement system
         this.achievements = this.loadAchievements();
+
+        // Initialize authentication system
+        this.authSystem = new AuthSystem(this);
+        this.authSystem.initFirebase();
     }
 
     initializeState() {
@@ -156,6 +160,67 @@ class DungeonAutGame {
     showGhostStats() {
         this.showScreen('ghost-screen');
         this.renderGhostStats();
+    }
+
+    // ===== AUTHENTICATION METHODS =====
+    switchAuthTab(tab) {
+        // Toggle forms
+        document.querySelectorAll('.auth-tab').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll('.auth-form').forEach(form => {
+            form.classList.remove('active');
+        });
+
+        if (tab === 'login') {
+            document.querySelector('.auth-tab:first-child').classList.add('active');
+            document.getElementById('login-form').classList.add('active');
+        } else {
+            document.querySelector('.auth-tab:last-child').classList.add('active');
+            document.getElementById('register-form').classList.add('active');
+        }
+    }
+
+    async handleLogin() {
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (!email || !password) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        const success = await this.authSystem.login(email, password);
+        if (success) {
+            this.showMainMenu();
+        }
+    }
+
+    async handleRegister() {
+        const username = document.getElementById('register-username').value.trim();
+        const email = document.getElementById('register-email').value.trim();
+        const password = document.getElementById('register-password').value;
+        const confirmPassword = document.getElementById('register-confirm-password').value;
+
+        if (!username || !email || !password || !confirmPassword) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            alert('Passwords do not match');
+            return;
+        }
+
+        if (password.length < 6) {
+            alert('Password must be at least 6 characters long');
+            return;
+        }
+
+        const success = await this.authSystem.register(email, password, username);
+        if (success) {
+            this.showMainMenu();
+        }
     }
 
     // ===== STAT ALLOCATION =====
@@ -1329,6 +1394,11 @@ class DungeonAutGame {
 
         // Update arena stats
         this.updateArenaStats(match, damageDealt, damageTaken, healingDone, critsLanded);
+
+        // Auto-save to cloud if logged in
+        if (this.authSystem && this.authSystem.isLoggedIn()) {
+            this.authSystem.saveStatsToCloud();
+        }
 
         // Check for flawless victory achievement
         if (isVictory && damageTaken === 0 && !this.achievements['flawless'].unlocked) {

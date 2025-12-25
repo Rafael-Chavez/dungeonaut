@@ -8,11 +8,82 @@
 </head>
 <body>
     <div id="app">
+        <!-- Login/Register Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="glass-panel login-panel">
+                <h1 class="title">⚔️ DUNGEONAUT ⚔️</h1>
+                <p class="subtitle">Login or Create Account</p>
+
+                <!-- Auth Status -->
+                <div id="auth-user-display" class="auth-status">Not logged in</div>
+
+                <!-- Tab Switcher -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="game.switchAuthTab('login')">Login</button>
+                    <button class="auth-tab" onclick="game.switchAuthTab('register')">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form" class="auth-form active">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+                    </div>
+                    <button class="btn btn-primary" onclick="game.handleLogin()">Login</button>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" class="auth-form">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="register-username" placeholder="Your username" autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="register-email" placeholder="your@email.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="register-password" placeholder="Password (min 6 chars)" autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="register-password-confirm" placeholder="Confirm password" autocomplete="new-password">
+                    </div>
+                    <button class="btn btn-primary" onclick="game.handleRegister()">Create Account</button>
+                </div>
+
+                <!-- Guest Mode -->
+                <div class="auth-divider">
+                    <span>OR</span>
+                </div>
+                <button class="btn btn-secondary" onclick="game.authSystem.playAsGuest()">
+                    Play as Guest (Local saves only)
+                </button>
+
+                <!-- Firebase Notice -->
+                <div class="auth-notice">
+                    <small>📱 Account required to sync stats across devices</small>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Menu -->
-        <div id="menu-screen" class="screen active">
+        <div id="menu-screen" class="screen">
             <div class="glass-panel main-menu">
                 <h1 class="title">⚔️ DUNGEONAUT ⚔️</h1>
                 <p class="subtitle">Master the Dungeon. Break the Clock.</p>
+
+                <!-- Auth Info in Main Menu -->
+                <div class="menu-auth-info">
+                    <div id="menu-auth-user" class="auth-status-small">Not logged in</div>
+                    <button id="auth-login-btn" class="btn-small" onclick="game.authSystem.showLoginScreen()">Login</button>
+                    <button id="auth-logout-btn" class="btn-small" onclick="game.authSystem.logout()" style="display: none;">Logout</button>
+                </div>
 
                 <div class="daily-info">
                     <div class="info-item">
@@ -655,9 +726,16 @@
         </div>
     </div>
 
-    <script src="pvp.js?v=12"></script>
-    <script src="multiplayer.js?v=12"></script>
-    <script src="game.js?v=12"></script>
-    <link rel="stylesheet" href="styles.css?v=12">
+    <!-- Firebase SDKs (compat version for v8 API) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- Game scripts -->
+    <script src="auth.js?v=13"></script>
+    <script src="pvp.js?v=13"></script>
+    <script src="multiplayer.js?v=13"></script>
+    <script src="game.js?v=13"></script>
+    <link rel="stylesheet" href="styles.css?v=13">
 </body>
 </html>
