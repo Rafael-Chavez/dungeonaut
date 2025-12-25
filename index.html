@@ -117,6 +117,10 @@
                         <span class="btn-icon">👻</span>
                         Ghost Stats
                     </button>
+                    <button class="btn btn-secondary" id="admin-menu-btn" onclick="adminSystem.showAdminDashboard()" style="display: none;">
+                        <span class="btn-icon">🔐</span>
+                        Admin Panel
+                    </button>
                 </div>
             </div>
         </div>
@@ -726,16 +730,26 @@
         </div>
     </div>
 
+    <!-- Admin Dashboard Screen -->
+    <div id="admin-dashboard-screen" class="screen">
+        <div class="glass-panel admin-dashboard-panel">
+            <div id="admin-dashboard-content">
+                <!-- Populated by admin.js -->
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDKs (compat version for v8 API) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <!-- Game scripts -->
-    <script src="auth.js?v=13"></script>
-    <script src="pvp.js?v=13"></script>
-    <script src="multiplayer.js?v=13"></script>
-    <script src="game.js?v=13"></script>
-    <link rel="stylesheet" href="styles.css?v=13">
+    <script src="auth.js?v=14"></script>
+    <script src="admin.js?v=14"></script>
+    <script src="pvp.js?v=14"></script>
+    <script src="multiplayer.js?v=14"></script>
+    <script src="game.js?v=14"></script>
+    <link rel="stylesheet" href="styles.css?v=14">
 </body>
 </html>
