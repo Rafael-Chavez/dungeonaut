@@ -271,10 +271,12 @@ class AuthSystem {
     }
 
     // Update UI based on auth state
-    updateAuthUI() {
+    async updateAuthUI() {
         const loginBtn = document.getElementById('auth-login-btn');
         const logoutBtn = document.getElementById('auth-logout-btn');
         const userDisplay = document.getElementById('auth-user-display');
+        const menuUserDisplay = document.getElementById('menu-auth-user');
+        const adminBtn = document.getElementById('admin-menu-btn');
 
         if (this.user) {
             // Logged in
@@ -284,6 +286,19 @@ class AuthSystem {
                 userDisplay.textContent = `Logged in as: ${this.user.username}`;
                 userDisplay.style.display = 'block';
             }
+            if (menuUserDisplay) {
+                menuUserDisplay.textContent = `Logged in as: ${this.user.username}`;
+            }
+
+            // Check and show admin button if user has admin role
+            if (this.game.adminSystem && adminBtn) {
+                const role = await this.game.adminSystem.loadUserRole(this.user.uid);
+                if (role && role !== 'player') {
+                    adminBtn.style.display = 'inline-block';
+                } else {
+                    adminBtn.style.display = 'none';
+                }
+            }
         } else {
             // Logged out
             if (loginBtn) loginBtn.style.display = 'inline-block';
@@ -291,6 +306,12 @@ class AuthSystem {
             if (userDisplay) {
                 userDisplay.textContent = 'Not logged in (stats are local only)';
                 userDisplay.style.display = 'block';
+            }
+            if (menuUserDisplay) {
+                menuUserDisplay.textContent = 'Not logged in';
+            }
+            if (adminBtn) {
+                adminBtn.style.display = 'none';
             }
         }
     }

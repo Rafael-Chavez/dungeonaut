@@ -26,6 +26,10 @@ class DungeonAutGame {
         // Initialize authentication system
         this.authSystem = new AuthSystem(this);
         this.authSystem.initFirebase();
+
+        // Initialize admin system
+        this.adminSystem = new AdminSystem(this);
+        window.adminSystem = this.adminSystem; // Global reference for onclick handlers
     }
 
     initializeState() {
