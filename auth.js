@@ -33,6 +33,7 @@ class AuthSystem {
         // Check if Firebase is loaded
         if (typeof firebase === 'undefined') {
             console.warn('Firebase not loaded. Authentication disabled.');
+            alert('Firebase libraries not loaded. Please check your internet connection and reload the page.');
             return false;
         }
 
@@ -40,6 +41,8 @@ class AuthSystem {
             firebase.initializeApp(firebaseConfig);
             this.auth = firebase.auth();
             this.db = firebase.firestore();
+
+            console.log('✅ Firebase initialized successfully');
 
             // Listen for auth state changes
             this.auth.onAuthStateChanged((user) => {
@@ -52,7 +55,22 @@ class AuthSystem {
 
             return true;
         } catch (error) {
-            console.error('Firebase initialization error:', error);
+            console.error('❌ Firebase initialization error:', error);
+            console.error('Error details:', {
+                code: error.code,
+                message: error.message,
+                projectId: firebaseConfig.projectId
+            });
+
+            // Show helpful error message to user
+            if (error.code === 'auth/configuration-not-found') {
+                console.error('⚠️ Firebase Authentication is not properly configured.');
+                console.error('Please ensure:');
+                console.error('1. Firebase Authentication is enabled in Firebase Console');
+                console.error('2. Email/Password sign-in method is enabled');
+                console.error('3. The API key has the correct permissions');
+            }
+
             return false;
         }
     }
@@ -184,8 +202,11 @@ class AuthSystem {
         };
 
         try {
+            // Sanitize data to remove functions (Firestore doesn't support functions)
+            const sanitizedStats = this.sanitizeForFirestore(statsToSave);
+
             await this.db.collection('playerStats').doc(this.user.uid).set({
-                ...statsToSave,
+                ...sanitizedStats,
                 lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
 
@@ -193,6 +214,21 @@ class AuthSystem {
         } catch (error) {
             console.error('Error saving stats to cloud:', error);
         }
+    }
+
+    // Helper function to remove functions and other non-serializable data
+    sanitizeForFirestore(obj) {
+        return JSON.parse(JSON.stringify(obj, (key, value) => {
+            // Skip functions
+            if (typeof value === 'function') {
+                return undefined;
+            }
+            // Skip undefined values
+            if (value === undefined) {
+                return null;
+            }
+            return value;
+        }));
     }
 
     // Load stats from cloud

@@ -5,9 +5,9 @@
 }
 
 :root {
-    --primary-color: #6366f1;
+    --primary-color: #000000ff;
     --primary-hover: #4f46e5;
-    --secondary-color: #8b5cf6;
+    --secondary-color: #f12323ff;
     --success-color: #10b981;
     --danger-color: #ef4444;
     --warning-color: #f59e0b;
