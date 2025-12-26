@@ -30,6 +30,17 @@ class DungeonAutGame {
         // Initialize admin system
         this.adminSystem = new AdminSystem(this);
         window.adminSystem = this.adminSystem; // Global reference for onclick handlers
+
+        // Initialize audio system
+        this.audioSystem = new AudioSystem(this);
+
+        // Settings state
+        this.settings = {
+            animationsEnabled: true,
+            screenShakeEnabled: true,
+            autosaveEnabled: true
+        };
+        this.loadSettings();
     }
 
     initializeState() {
@@ -973,6 +984,181 @@ class DungeonAutGame {
     showPvPLobby() {
         this.showScreen('pvp-lobby-screen');
         this.updatePvPStats();
+    }
+
+    // ===== SETTINGS METHODS =====
+    showSettings() {
+        const modal = document.getElementById('settings-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            this.updateSettingsUI();
+        }
+    }
+
+    closeSettings() {
+        const modal = document.getElementById('settings-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        this.saveSettings();
+    }
+
+    updateSettingsUI() {
+        // Update volume sliders from audio system
+        if (this.audioSystem) {
+            const masterSlider = document.getElementById('master-volume');
+            const musicSlider = document.getElementById('music-volume');
+            const sfxSlider = document.getElementById('sfx-volume');
+
+            if (masterSlider) masterSlider.value = this.audioSystem.masterVolume * 100;
+            if (musicSlider) musicSlider.value = this.audioSystem.musicVolume * 100;
+            if (sfxSlider) sfxSlider.value = this.audioSystem.sfxVolume * 100;
+        }
+
+        // Update toggle buttons
+        const animToggle = document.getElementById('toggle-animations');
+        const shakeToggle = document.getElementById('toggle-screen-shake');
+        const autosaveToggle = document.getElementById('toggle-autosave');
+
+        if (animToggle) animToggle.textContent = this.settings.animationsEnabled ? '✅ Enabled' : '❌ Disabled';
+        if (shakeToggle) shakeToggle.textContent = this.settings.screenShakeEnabled ? '✅ Enabled' : '❌ Disabled';
+        if (autosaveToggle) autosaveToggle.textContent = this.settings.autosaveEnabled ? '✅ Enabled' : '❌ Disabled';
+    }
+
+    toggleAnimations() {
+        this.settings.animationsEnabled = !this.settings.animationsEnabled;
+        this.saveSettings();
+        this.updateSettingsUI();
+    }
+
+    toggleScreenShake() {
+        this.settings.screenShakeEnabled = !this.settings.screenShakeEnabled;
+        this.saveSettings();
+        this.updateSettingsUI();
+    }
+
+    toggleAutosave() {
+        this.settings.autosaveEnabled = !this.settings.autosaveEnabled;
+        this.saveSettings();
+        this.updateSettingsUI();
+    }
+
+    resetTutorial() {
+        if (confirm('Reset tutorial progress? This will show all tutorial messages again.')) {
+            localStorage.removeItem('dungeonaut_tutorial_completed');
+            alert('Tutorial reset! Reload the page to see tutorial messages.');
+        }
+    }
+
+    loadSettings() {
+        const saved = localStorage.getItem('dungeonaut_settings');
+        if (saved) {
+            try {
+                const settings = JSON.parse(saved);
+                this.settings = { ...this.settings, ...settings };
+            } catch (e) {
+                console.error('Failed to load settings:', e);
+            }
+        }
+    }
+
+    saveSettings() {
+        localStorage.setItem('dungeonaut_settings', JSON.stringify(this.settings));
+    }
+
+    // ===== FEEDBACK METHODS =====
+    showFeedback() {
+        const modal = document.getElementById('feedback-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            // Clear previous feedback
+            document.getElementById('feedback-title').value = '';
+            document.getElementById('feedback-description').value = '';
+            document.getElementById('feedback-type').value = 'bug';
+            const statusEl = document.getElementById('feedback-status');
+            if (statusEl) statusEl.textContent = '';
+
+            // Pre-fill email if user is logged in
+            if (this.authSystem && this.authSystem.user) {
+                document.getElementById('feedback-email').value = this.authSystem.user.email || '';
+            }
+        }
+    }
+
+    closeFeedback() {
+        const modal = document.getElementById('feedback-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    async submitFeedback() {
+        const type = document.getElementById('feedback-type').value;
+        const title = document.getElementById('feedback-title').value.trim();
+        const description = document.getElementById('feedback-description').value.trim();
+        const email = document.getElementById('feedback-email').value.trim();
+        const statusEl = document.getElementById('feedback-status');
+
+        // Validation
+        if (!title) {
+            statusEl.textContent = '❌ Please provide a title';
+            statusEl.style.color = '#ef4444';
+            return;
+        }
+
+        if (!description) {
+            statusEl.textContent = '❌ Please provide a description';
+            statusEl.style.color = '#ef4444';
+            return;
+        }
+
+        statusEl.textContent = '⏳ Submitting feedback...';
+        statusEl.style.color = '#fbbf24';
+
+        const feedbackData = {
+            type,
+            title,
+            description,
+            email: email || 'anonymous',
+            userId: this.authSystem?.user?.uid || 'guest',
+            username: this.authSystem?.user?.username || 'Guest',
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            userAgent: navigator.userAgent,
+            url: window.location.href
+        };
+
+        try {
+            // Save to Firestore
+            if (this.authSystem && this.authSystem.db) {
+                await this.authSystem.db.collection('feedback').add(feedbackData);
+                statusEl.textContent = '✅ Feedback submitted successfully! Thank you!';
+                statusEl.style.color = '#10b981';
+
+                // Close modal after 2 seconds
+                setTimeout(() => {
+                    this.closeFeedback();
+                }, 2000);
+            } else {
+                // Fallback: save to localStorage if offline
+                const localFeedback = JSON.parse(localStorage.getItem('dungeonaut_pending_feedback') || '[]');
+                localFeedback.push({
+                    ...feedbackData,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('dungeonaut_pending_feedback', JSON.stringify(localFeedback));
+
+                statusEl.textContent = '✅ Feedback saved! Will be sent when online.';
+                statusEl.style.color = '#10b981';
+
+                setTimeout(() => {
+                    this.closeFeedback();
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            statusEl.textContent = '❌ Failed to submit. Please try again.';
+            statusEl.style.color = '#ef4444';
+        }
     }
 
     updatePvPStats() {

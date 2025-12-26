@@ -100,22 +100,44 @@
                     </div>
                 </div>
 
+                <!-- Player Progression Display -->
+                <div class="player-progression-summary glass-panel-mini">
+                    <div class="progression-header">
+                        <div class="player-level">
+                            <span class="level-icon">⭐</span>
+                            <span id="player-level-display">Level 1</span>
+                        </div>
+                        <div class="player-class">
+                            <span id="player-class-display">Novice</span>
+                        </div>
+                    </div>
+                    <div class="xp-bar-container">
+                        <div class="xp-bar-fill" id="xp-bar-fill" style="width: 0%"></div>
+                        <span class="xp-bar-text" id="xp-bar-text">0 / 100 XP</span>
+                    </div>
+                    <button class="btn-progression" onclick="game.showProgression()">
+                        📊 View Progression
+                    </button>
+                </div>
+
                 <div class="menu-buttons">
                     <button class="btn btn-primary" onclick="game.showPlanningScreen()">
                         <span class="btn-icon">🎯</span>
                         Start Run
                     </button>
-                    <button class="btn btn-primary" onclick="game.showPvPLobby()">
-                        <span class="btn-icon">⚔️</span>
-                        PvP Arena
-                    </button>
-                    <button class="btn btn-secondary" onclick="game.showLeaderboard()">
-                        <span class="btn-icon">🏆</span>
-                        Leaderboards
-                    </button>
+                    <img src="images/pvpButton.png" alt="PvP Arena" class="menu-image-btn" onclick="game.showPvPLobby()">
+                    <img src="images/leaderboards.png" alt="Leaderboards" class="menu-image-btn" onclick="game.showLeaderboard()">
                     <button class="btn btn-secondary" onclick="game.showGhostStats()">
                         <span class="btn-icon">👻</span>
                         Ghost Stats
+                    </button>
+                    <button class="btn btn-secondary" onclick="game.showSettings()">
+                        <span class="btn-icon">⚙️</span>
+                        Settings
+                    </button>
+                    <button class="btn btn-secondary" onclick="game.showFeedback()">
+                        <span class="btn-icon">💬</span>
+                        Send Feedback
                     </button>
                     <button class="btn btn-secondary" id="admin-menu-btn" onclick="game.adminSystem.showAdminDashboard()" style="display: none;">
                         <span class="btn-icon">🔐</span>
@@ -355,6 +377,25 @@
                     <span id="connection-status">Connecting...</span>
                     <span id="username-display"></span>
                     <button class="btn-small" onclick="game.changeUsername()" style="margin-left: 10px;">Change Name</button>
+                </div>
+
+                <!-- Team Size Selection -->
+                <div class="pvp-team-selection">
+                    <h3>Select Team Size</h3>
+                    <div class="team-size-options">
+                        <button class="team-size-btn active" id="team-size-1v1" onclick="game.selectTeamSize('1v1')">
+                            <div class="team-size-icon">⚔️</div>
+                            <div class="team-size-name">1v1</div>
+                        </button>
+                        <button class="team-size-btn" id="team-size-2v2" onclick="game.selectTeamSize('2v2')">
+                            <div class="team-size-icon">👥</div>
+                            <div class="team-size-name">2v2</div>
+                        </button>
+                        <button class="team-size-btn" id="team-size-3v3" onclick="game.selectTeamSize('3v3')">
+                            <div class="team-size-icon">👥👥</div>
+                            <div class="team-size-name">3v3</div>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="pvp-mode-selection">
@@ -661,14 +702,8 @@
                 <div class="pvp-actions glass-panel">
                     <h4>Select Your Action</h4>
                     <div class="action-grid">
-                        <button class="action-btn action-basic" data-action-id="basic_attack" onclick="game.selectPvPAction('basic_attack')">
-                            <div class="action-name">⚔️ Basic Attack</div>
-                            <div class="action-desc">Deal 100% damage</div>
-                        </button>
-                        <button class="action-btn action-guard" data-action-id="guard" onclick="game.selectPvPAction('guard')">
-                            <div class="action-name">🛡️ Guard</div>
-                            <div class="action-desc">Reduce damage by 50%, gain shield</div>
-                        </button>
+                        <img src="images/basicAttack.png" alt="Basic Attack" class="action-image-btn" data-action-id="basic_attack" onclick="game.selectPvPAction('basic_attack')">
+                        <img src="images/guard.png" alt="Guard" class="action-image-btn" data-action-id="guard" onclick="game.selectPvPAction('guard')">
                     </div>
 
                     <h4>Skills</h4>
@@ -730,6 +765,203 @@
         </div>
     </div>
 
+    <!-- Player Progression Screen -->
+    <div id="progression-screen" class="screen">
+        <div class="glass-panel progression-panel">
+            <h2>⭐ Player Progression</h2>
+
+            <!-- Level & XP Summary -->
+            <div class="progression-summary">
+                <div class="level-display-large">
+                    <div class="level-number" id="progression-level">1</div>
+                    <div class="level-label">Level</div>
+                </div>
+                <div class="xp-progress-section">
+                    <div class="xp-progress-bar">
+                        <div class="xp-progress-fill" id="progression-xp-fill" style="width: 0%"></div>
+                        <span class="xp-progress-text" id="progression-xp-text">0 / 100 XP</span>
+                    </div>
+                    <div class="xp-stats">
+                        <span>Total XP: <strong id="total-xp">0</strong></span>
+                        <span>Next Level: <strong id="xp-to-next">100 XP</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Class Selection -->
+            <div class="progression-section">
+                <h3>🎭 Class Selection</h3>
+                <p class="section-subtitle">Choose your playstyle (Unlocks at Level 5)</p>
+                <div class="class-grid" id="class-selection-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Skill Unlocks -->
+            <div class="progression-section">
+                <h3>✨ Skill Unlocks</h3>
+                <p class="section-subtitle">Unlock new abilities as you level up</p>
+                <div class="unlock-grid" id="skill-unlocks-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Perk Tree -->
+            <div class="progression-section">
+                <h3>🌟 Perks & Talents</h3>
+                <p class="section-subtitle">Permanent bonuses - Perk Points: <strong id="perk-points">0</strong></p>
+                <div class="perk-tree" id="perk-tree">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Titles & Cosmetics -->
+            <div class="progression-section">
+                <h3>👑 Titles & Achievements</h3>
+                <p class="section-subtitle">Show off your accomplishments</p>
+                <div class="title-grid" id="title-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="progression-actions">
+                <button class="btn btn-secondary" onclick="game.showMainMenu()">Back to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-overlay" onclick="game.closeSettings()"></div>
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="modal-close" onclick="game.closeSettings()">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Audio Settings -->
+                <div class="settings-section">
+                    <h3>🔊 Audio</h3>
+                    <div class="setting-item">
+                        <label for="master-volume">Master Volume</label>
+                        <div class="volume-control">
+                            <input type="range" id="master-volume" min="0" max="100" value="70" oninput="game.audioSystem.setMasterVolume(this.value)">
+                            <span id="master-volume-value">70%</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="music-volume">Music Volume</label>
+                        <div class="volume-control">
+                            <input type="range" id="music-volume" min="0" max="100" value="50" oninput="game.audioSystem.setMusicVolume(this.value)">
+                            <span id="music-volume-value">50%</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="sfx-volume">Sound Effects</label>
+                        <div class="volume-control">
+                            <input type="range" id="sfx-volume" min="0" max="100" value="70" oninput="game.audioSystem.setSFXVolume(this.value)">
+                            <span id="sfx-volume-value">70%</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label>Background Music</label>
+                        <button class="btn btn-secondary" id="music-toggle" onclick="game.audioSystem.toggleMusic()">
+                            <span id="music-status">▶️ Play</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Display Settings -->
+                <div class="settings-section">
+                    <h3>🖥️ Display</h3>
+                    <div class="setting-item">
+                        <label>Animations</label>
+                        <button class="btn btn-secondary toggle-btn" id="toggle-animations" onclick="game.toggleAnimations()">
+                            ✅ Enabled
+                        </button>
+                    </div>
+                    <div class="setting-item">
+                        <label>Screen Shake</label>
+                        <button class="btn btn-secondary toggle-btn" id="toggle-screen-shake" onclick="game.toggleScreenShake()">
+                            ✅ Enabled
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Game Settings -->
+                <div class="settings-section">
+                    <h3>🎮 Game</h3>
+                    <div class="setting-item">
+                        <label>Autosave</label>
+                        <button class="btn btn-secondary toggle-btn" id="toggle-autosave" onclick="game.toggleAutosave()">
+                            ✅ Enabled
+                        </button>
+                    </div>
+                    <div class="setting-item">
+                        <label>Combat Tutorial</label>
+                        <button class="btn btn-secondary" onclick="game.resetTutorial()">
+                            Reset Tutorial
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="game.closeSettings()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal">
+        <div class="modal-overlay" onclick="game.closeFeedback()"></div>
+        <div class="modal-content feedback-modal-content">
+            <div class="modal-header">
+                <h2>💬 Submit Feedback</h2>
+                <button class="modal-close" onclick="game.closeFeedback()">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="feedback-intro">
+                    <p>Help us improve Dungeonaut! Submit bug reports, suggestions, or general feedback.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="feedback-type">Feedback Type</label>
+                    <select id="feedback-type" class="feedback-select">
+                        <option value="bug">🐛 Bug Report</option>
+                        <option value="feature">✨ Feature Request</option>
+                        <option value="improvement">🔧 Improvement</option>
+                        <option value="general">💭 General Feedback</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="feedback-title">Title</label>
+                    <input type="text" id="feedback-title" placeholder="Brief summary of your feedback" class="feedback-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="feedback-description">Description</label>
+                    <textarea id="feedback-description" rows="6" placeholder="Provide details about your feedback..." class="feedback-textarea"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="feedback-email">Email (Optional)</label>
+                    <input type="email" id="feedback-email" placeholder="your@email.com (if you want a response)" class="feedback-input">
+                </div>
+
+                <div id="feedback-status" class="feedback-status"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="game.closeFeedback()">Cancel</button>
+                <button class="btn btn-primary" onclick="game.submitFeedback()">Submit Feedback</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Admin Dashboard Screen -->
     <div id="admin-dashboard-screen" class="screen">
         <div class="glass-panel admin-dashboard-panel">
@@ -739,17 +971,24 @@
         </div>
     </div>
 
+    <!-- Background Music -->
+    <audio id="background-music" loop>
+        <source src="music/Track 4 - A dramatic song, with ambient style, for a Videogame.wav" type="audio/wav">
+    </audio>
+
     <!-- Firebase SDKs (compat version for v8 API) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <!-- Game scripts -->
-    <script src="auth.js?v=14"></script>
-    <script src="admin.js?v=14"></script>
-    <script src="pvp.js?v=14"></script>
-    <script src="multiplayer.js?v=14"></script>
-    <script src="game.js?v=14"></script>
-    <link rel="stylesheet" href="styles.css?v=14">
+    <script src="auth.js?v=16"></script>
+    <script src="admin.js?v=16"></script>
+    <script src="progression.js?v=16"></script>
+    <script src="audio.js?v=16"></script>
+    <script src="pvp.js?v=16"></script>
+    <script src="multiplayer.js?v=16"></script>
+    <script src="game.js?v=16"></script>
+    <link rel="stylesheet" href="styles.css?v=16">
 </body>
 </html>

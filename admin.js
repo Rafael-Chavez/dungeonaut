@@ -104,6 +104,12 @@ class AdminSystem {
             return;
         }
 
+        // Add admin-active class to remove app padding
+        const appDiv = document.getElementById('app');
+        if (appDiv) {
+            appDiv.classList.add('admin-active');
+        }
+
         this.game.showScreen('admin-dashboard-screen');
         this.renderAdminDashboard();
     }
@@ -155,7 +161,7 @@ class AdminSystem {
         html += `
             </div>
             <div class="admin-actions">
-                <button class="btn btn-secondary" onclick="adminSystem.closeAdminDashboard()">
+                <button class="btn btn-secondary" onclick="game.adminSystem.closeAdminDashboard()">
                     Close Dashboard
                 </button>
             </div>
@@ -170,21 +176,21 @@ class AdminSystem {
             <div class="admin-section">
                 <h3>👥 Player Management</h3>
                 <div class="admin-controls">
-                    <button class="admin-btn" onclick="adminSystem.showPlayerList()">
+                    <button class="admin-btn" onclick="game.adminSystem.showPlayerList()">
                         View All Players
                     </button>
                     ${this.hasPermission('banPlayer') ? `
-                        <button class="admin-btn admin-btn-warning" onclick="adminSystem.showBanPlayer()">
+                        <button class="admin-btn admin-btn-warning" onclick="game.adminSystem.showBanPlayer()">
                             Ban Player
                         </button>
                     ` : ''}
                     ${this.hasPermission('unbanPlayer') ? `
-                        <button class="admin-btn admin-btn-success" onclick="adminSystem.showUnbanPlayer()">
+                        <button class="admin-btn admin-btn-success" onclick="game.adminSystem.showUnbanPlayer()">
                             Unban Player
                         </button>
                     ` : ''}
                     ${this.hasPermission('editPlayerStats') ? `
-                        <button class="admin-btn" onclick="adminSystem.showEditPlayerStats()">
+                        <button class="admin-btn" onclick="game.adminSystem.showEditPlayerStats()">
                             Edit Player Stats
                         </button>
                     ` : ''}
@@ -200,11 +206,11 @@ class AdminSystem {
             <div class="admin-section">
                 <h3>🛡️ Content Moderation</h3>
                 <div class="admin-controls">
-                    <button class="admin-btn" onclick="adminSystem.showReports()">
+                    <button class="admin-btn" onclick="game.adminSystem.showReports()">
                         View Reports (0)
                     </button>
                     ${this.hasPermission('deleteContent') ? `
-                        <button class="admin-btn admin-btn-danger" onclick="adminSystem.showDeleteContent()">
+                        <button class="admin-btn admin-btn-danger" onclick="game.adminSystem.showDeleteContent()">
                             Delete Content
                         </button>
                     ` : ''}
@@ -220,16 +226,16 @@ class AdminSystem {
             <div class="admin-section">
                 <h3>⚙️ Game Settings</h3>
                 <div class="admin-controls">
-                    <button class="admin-btn" onclick="adminSystem.showGameSettings()">
+                    <button class="admin-btn" onclick="game.adminSystem.showGameSettings()">
                         View Settings
                     </button>
                     ${this.hasPermission('createGlobalEvent') ? `
-                        <button class="admin-btn admin-btn-primary" onclick="adminSystem.createGlobalEvent()">
+                        <button class="admin-btn admin-btn-primary" onclick="game.adminSystem.createGlobalEvent()">
                             Create Global Event
                         </button>
                     ` : ''}
                     ${this.hasPermission('editGameSettings') ? `
-                        <button class="admin-btn" onclick="adminSystem.editMaintenanceMode()">
+                        <button class="admin-btn" onclick="game.adminSystem.editMaintenanceMode()">
                             Toggle Maintenance Mode
                         </button>
                     ` : ''}
@@ -245,16 +251,16 @@ class AdminSystem {
             <div class="admin-section">
                 <h3>🧪 Test Environment</h3>
                 <div class="admin-controls">
-                    <button class="admin-btn" onclick="adminSystem.toggleDebugMode()">
+                    <button class="admin-btn" onclick="game.adminSystem.toggleDebugMode()">
                         Toggle Debug Mode
                     </button>
-                    <button class="admin-btn" onclick="adminSystem.resetPlayerStats()">
+                    <button class="admin-btn" onclick="game.adminSystem.resetPlayerStats()">
                         Reset Test Stats
                     </button>
-                    <button class="admin-btn" onclick="adminSystem.unlockAllAchievements()">
+                    <button class="admin-btn" onclick="game.adminSystem.unlockAllAchievements()">
                         Unlock All Achievements (Test)
                     </button>
-                    <button class="admin-btn" onclick="adminSystem.simulateBattle()">
+                    <button class="admin-btn" onclick="game.adminSystem.simulateBattle()">
                         Simulate Battle
                     </button>
                 </div>
@@ -287,11 +293,11 @@ class AdminSystem {
                     </div>
                 </div>
                 <div class="admin-controls">
-                    <button class="admin-btn" onclick="adminSystem.loadAnalytics()">
+                    <button class="admin-btn" onclick="game.adminSystem.loadAnalytics()">
                         Refresh Analytics
                     </button>
                     ${this.hasPermission('exportData') ? `
-                        <button class="admin-btn" onclick="adminSystem.exportAnalytics()">
+                        <button class="admin-btn" onclick="game.adminSystem.exportAnalytics()">
                             Export Data
                         </button>
                     ` : ''}
@@ -558,6 +564,12 @@ class AdminSystem {
 
     // Close dashboard
     closeAdminDashboard() {
+        // Remove admin-active class to restore app padding
+        const appDiv = document.getElementById('app');
+        if (appDiv) {
+            appDiv.classList.remove('admin-active');
+        }
+
         this.game.showMainMenu();
     }
 }
