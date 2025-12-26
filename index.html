@@ -126,6 +126,10 @@
                         Start Run
                     </button>
                     <img src="images/pvpButton.png" alt="PvP Arena" class="menu-image-btn" onclick="game.showPvPLobby()">
+                    <button class="btn btn-secondary" onclick="game.invasionSystem.showInvasionMenu()">
+                        <span class="btn-icon">⚔️</span>
+                        Invasion Mode
+                    </button>
                     <img src="images/leaderboards.png" alt="Leaderboards" class="menu-image-btn" onclick="game.showLeaderboard()">
                     <button class="btn btn-secondary" onclick="game.showGhostStats()">
                         <span class="btn-icon">👻</span>
@@ -532,6 +536,17 @@
                     <!-- Achievements -->
                     <div class="section">
                         <h3>🏅 Achievements</h3>
+                        <div class="achievement-filters">
+                            <button class="filter-btn active" data-filter="all" onclick="game.filterAchievements('all')">
+                                All
+                            </button>
+                            <button class="filter-btn" data-filter="unlocked" onclick="game.filterAchievements('unlocked')">
+                                Unlocked
+                            </button>
+                            <button class="filter-btn" data-filter="locked" onclick="game.filterAchievements('locked')">
+                                Locked
+                            </button>
+                        </div>
                         <div id="achievements-grid" class="achievements-grid">
                             <!-- Populated by JS -->
                         </div>
@@ -673,7 +688,8 @@
                     </div>
 
                     <div class="battle-info">
-                        <div class="turn-counter">Turn <span id="pvp-turn">1</span>/30</div>
+                        <div class="turn-counter">Turn <span id="pvp-turn">1</span>/∞</div>
+                        <div class="turn-timer">⏱️ <span id="pvp-timer">60</span>s</div>
                         <div class="vs-display">⚔️ VS ⚔️</div>
                     </div>
 
@@ -971,6 +987,133 @@
         </div>
     </div>
 
+    <!-- Invasion Menu Screen -->
+    <div id="invasion-menu-screen" class="screen">
+        <div class="glass-panel invasion-menu-panel">
+            <h2>⚔️ Invasion Mode</h2>
+            <p class="subtitle">Turn-based strategy combat - Build your squad with 1000 points</p>
+
+            <!-- Points Display - Centered at top -->
+            <div class="invasion-points-display">
+                <div class="points-box">
+                    <div class="points-label">Squad Resources</div>
+                    <div class="points-value" id="invasion-points-remaining">1000 / 1000</div>
+                </div>
+            </div>
+
+            <!-- Two Column Layout: Commands Left, Units Right -->
+            <div class="invasion-menu-content">
+                <!-- Left Column: Commands -->
+                <div class="invasion-column invasion-commands-column">
+                    <h3>Available Commands</h3>
+                    <div id="invasion-command-shop" class="invasion-shop-container"></div>
+                </div>
+
+                <!-- Right Column: Units -->
+                <div class="invasion-column invasion-units-column">
+                    <h3>Available Units</h3>
+                    <div id="invasion-unit-shop" class="invasion-shop-container"></div>
+                </div>
+            </div>
+
+            <!-- Horizontal Action Buttons -->
+            <div class="invasion-menu-actions">
+                <button class="btn btn-secondary" onclick="game.invasionSystem.clearAll()">Clear All</button>
+                <button class="btn btn-secondary" onclick="game.invasionSystem.showFormationEditor()">Set Formation</button>
+                <button class="btn btn-primary" onclick="game.invasionSystem.showMatchmaking()">Find Match</button>
+                <button class="btn btn-secondary" onclick="game.invasionSystem.exitInvasionMode()">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invasion Formation Editor -->
+    <div id="invasion-formation-screen" class="screen">
+        <div class="glass-panel invasion-formation-panel">
+            <h2>📋 Formation Editor</h2>
+            <p class="subtitle">Place your units in the first 3 rows (your side)</p>
+
+            <div id="invasion-formation-board"></div>
+
+            <div class="invasion-formation-actions">
+                <button class="btn btn-secondary" onclick="game.invasionSystem.clearFormation()">Clear Formation</button>
+                <button class="btn btn-primary" onclick="game.invasionSystem.showInvasionMenu()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invasion Matchmaking Screen -->
+    <div id="invasion-matchmaking-screen" class="screen">
+        <div class="glass-panel matchmaking-panel">
+            <h2>🔍 Finding Match...</h2>
+
+            <div class="matchmaking-spinner">
+                <div class="spinner"></div>
+            </div>
+
+            <p id="invasion-matchmaking-status" class="matchmaking-status">Searching for opponent...</p>
+
+            <div class="matchmaking-actions">
+                <button class="btn btn-secondary" onclick="game.invasionSystem.cancelMatchmaking()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invasion Game Screen -->
+    <div id="invasion-game-screen" class="screen">
+        <div class="invasion-game-layout">
+            <!-- Left Panel: Player Info & Commands -->
+            <div class="invasion-left-panel">
+                <div class="invasion-player-info glass-panel">
+                    <h3 id="invasion-player-name">You</h3>
+                    <div class="player-stats">
+                        <div class="stat-row">
+                            <span>Turn:</span>
+                            <span id="invasion-turn-counter">1</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>CP:</span>
+                            <span id="invasion-command-points">25</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Units:</span>
+                            <span id="invasion-player-units">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="invasion-commands-panel glass-panel">
+                    <h3>Commands</h3>
+                    <div id="invasion-commands-list"></div>
+                </div>
+
+                <div class="invasion-actions-panel glass-panel">
+                    <button class="btn btn-primary" id="invasion-end-turn-btn" onclick="game.invasionSystem.endTurn()">End Turn</button>
+                    <button class="btn btn-secondary" onclick="game.invasionSystem.forfeit()">Forfeit</button>
+                </div>
+            </div>
+
+            <!-- Center: Game Board -->
+            <div class="invasion-board-container">
+                <div class="invasion-opponent-info">
+                    <span id="invasion-opponent-name">AI Opponent</span>
+                    <span id="invasion-opponent-units">0 units</span>
+                </div>
+                <div id="invasion-game-board" class="invasion-chess-board"></div>
+                <div class="invasion-player-indicator">
+                    <span>Your Side</span>
+                </div>
+            </div>
+
+            <!-- Right Panel: Battle Log -->
+            <div class="invasion-right-panel">
+                <div class="invasion-log-panel glass-panel">
+                    <h3>Battle Log</h3>
+                    <div id="invasion-battle-log" class="invasion-log-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Background Music -->
     <audio id="background-music" loop>
         <source src="music/Track 4 - A dramatic song, with ambient style, for a Videogame.wav" type="audio/wav">
@@ -982,11 +1125,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <!-- Game scripts -->
-    <script src="auth.js?v=16"></script>
-    <script src="admin.js?v=16"></script>
-    <script src="progression.js?v=16"></script>
-    <script src="audio.js?v=16"></script>
-    <script src="pvp.js?v=16"></script>
+    <script src="auth.js?v=17"></script>
+    <script src="admin.js?v=17"></script>
+    <script src="progression.js?v=17"></script>
+    <script src="audio.js?v=17"></script>
+    <script src="invasion.js?v=17"></script>
+    <script src="pvp.js?v=17"></script>
     <script src="multiplayer.js?v=16"></script>
     <script src="game.js?v=16"></script>
     <link rel="stylesheet" href="styles.css?v=16">

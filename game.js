@@ -34,6 +34,9 @@ class DungeonAutGame {
         // Initialize audio system
         this.audioSystem = new AudioSystem(this);
 
+        // Initialize invasion system
+        this.invasionSystem = new InvasionSystem(this);
+
         // Settings state
         this.settings = {
             animationsEnabled: true,
@@ -1205,7 +1208,7 @@ class DungeonAutGame {
             `${mostUsed.name}${mostUsed.uses > 0 ? ' (' + mostUsed.uses + 'x)' : ''}`;
     }
 
-    renderAchievements() {
+    renderAchievements(filter = 'all') {
         const container = document.getElementById('achievements-grid');
         const allAchievements = this.getAllAchievements();
 
@@ -1213,6 +1216,10 @@ class DungeonAutGame {
         allAchievements.forEach(ach => {
             const unlocked = this.achievements[ach.id].unlocked;
             const lockedClass = unlocked ? 'unlocked' : 'locked';
+
+            // Apply filter
+            if (filter === 'unlocked' && !unlocked) return;
+            if (filter === 'locked' && unlocked) return;
 
             html += `
                 <div class="achievement-card ${lockedClass}">
@@ -1227,6 +1234,19 @@ class DungeonAutGame {
         });
 
         container.innerHTML = html;
+    }
+
+    filterAchievements(filter) {
+        // Update filter button states
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.filter === filter) {
+                btn.classList.add('active');
+            }
+        });
+
+        // Re-render achievements with filter
+        this.renderAchievements(filter);
     }
 
     selectPvPMode(mode) {
@@ -1326,6 +1346,12 @@ class DungeonAutGame {
 
         this.showScreen('pvp-battle-screen');
         this.updatePvPBattleUI();
+
+        // Display coin flip result
+        this.displayTurnLog(match.battleLog[0]);
+
+        // Start turn timer
+        this.startPvPTimer();
     }
 
     generateAISkillset() {
@@ -1379,6 +1405,9 @@ class DungeonAutGame {
         const match = this.pvpSystem.currentMatch;
         match.player.selectedAction = this.selectedPvPAction;
 
+        // Stop current timer
+        this.stopPvPTimer();
+
         // AI selects action
         this.pvpSystem.selectAIAction();
 
@@ -1395,9 +1424,13 @@ class DungeonAutGame {
 
         // Check for battle end
         if (match.winner) {
+            this.stopPvPTimer();
             setTimeout(() => {
                 this.endPvPBattle(match);
             }, 2000);
+        } else {
+            // Restart timer for next turn
+            this.startPvPTimer();
         }
     }
 
@@ -1406,6 +1439,11 @@ class DungeonAutGame {
 
         // Update turn counter
         document.getElementById('pvp-turn').textContent = match.turn;
+
+        // Update timer
+        if (document.getElementById('pvp-timer')) {
+            document.getElementById('pvp-timer').textContent = match.currentTurnTime || match.turnTimer;
+        }
 
         // Update player HP
         const playerHpPercent = (match.player.hp / match.player.maxHp) * 100;
@@ -1762,17 +1800,36 @@ class DungeonAutGame {
         // Initialize online battle
         const match = this.pvpSystem.startPvPMatch(this.pvpMode === 'ranked');
 
-        // Set up player
-        match.player.selectedSkills = message.playerData.skills;
-        match.player.skills = message.playerData.skills.map(s => ({ ...s, currentCooldown: 0 }));
+        // Get all available skills to reconstruct skill objects with execute functions
+        const allSkills = this.pvpSystem.getPvPSkills();
 
-        // Set up opponent
+        // Helper to reconstruct full skill object from ID
+        const reconstructSkill = (skillData) => {
+            const fullSkill = allSkills.find(s => s.id === skillData.id);
+            return fullSkill ? { ...fullSkill } : skillData;
+        };
+
+        // Set up player with reconstructed skills
+        const playerSkills = message.playerData.skills.map(reconstructSkill);
+        match.player.selectedSkills = playerSkills;
+        match.player.skills = playerSkills.map(s => ({ ...s, currentCooldown: 0 }));
+
+        // Set up opponent with reconstructed skills
         match.opponent.name = this.multiplayerClient.currentMatch.opponent;
-        match.opponent.selectedSkills = message.opponentData.skills;
-        match.opponent.skills = message.opponentData.skills.map(s => ({ ...s, currentCooldown: 0 }));
+        const opponentSkills = message.opponentData.skills.map(reconstructSkill);
+        match.opponent.selectedSkills = opponentSkills;
+        match.opponent.skills = opponentSkills.map(s => ({ ...s, currentCooldown: 0 }));
 
         this.showScreen('pvp-battle-screen');
         this.updatePvPBattleUI();
+
+        // Display coin flip result
+        if (match.battleLog && match.battleLog[0]) {
+            this.displayTurnLog(match.battleLog[0]);
+        }
+
+        // Start turn timer
+        this.startPvPTimer();
     }
 
     confirmPvPAction() {
@@ -2184,6 +2241,39 @@ class DungeonAutGame {
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 500);
         }, 4000);
+    }
+
+    // ===== PVP TIMER =====
+    startPvPTimer() {
+        const match = this.pvpSystem.currentMatch;
+        if (!match) return;
+
+        // Stop any existing timer
+        this.stopPvPTimer();
+
+        // Reset timer for this turn
+        match.currentTurnTime = match.turnTimer;
+
+        // Start countdown
+        this.pvpTimerInterval = setInterval(() => {
+            if (match.currentTurnTime > 0) {
+                match.currentTurnTime--;
+                this.updatePvPBattleUI();
+            } else {
+                // Time's up! Auto-select basic attack
+                if (!this.selectedPvPAction) {
+                    this.selectedPvPAction = { id: 'basic_attack', name: 'Basic Attack', priority: 'normal' };
+                    this.confirmPvPAction();
+                }
+            }
+        }, 1000);
+    }
+
+    stopPvPTimer() {
+        if (this.pvpTimerInterval) {
+            clearInterval(this.pvpTimerInterval);
+            this.pvpTimerInterval = null;
+        }
     }
 }
 

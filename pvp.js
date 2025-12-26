@@ -214,9 +214,24 @@ class PvPSystem {
                 type: 'sustain',
                 priority: 'high',
                 cooldown: 4,
-                desc: 'Shield for 40% max HP for 2 turns',
+                desc: 'Shield for 40% max HP, 15% if already shielded',
                 execute: (attacker, defender) => {
-                    attacker.shield = Math.floor(attacker.maxHp * 0.4);
+                    let shieldGain;
+
+                    // Apply diminishing returns if already shielded
+                    if (attacker.shield > 0) {
+                        shieldGain = Math.floor(attacker.maxHp * 0.15); // Reduced to 15% if already has shield
+                        attacker.shield = Math.max(attacker.shield, shieldGain); // Take the higher value
+                        attacker.status.shielded = 2;
+                        return {
+                            damage: 0,
+                            message: `${attacker.name} raises a barrier! (reduced - already shielded)`,
+                            selfEffect: `Shield: ${attacker.shield} HP (diminished)`
+                        };
+                    }
+
+                    shieldGain = Math.floor(attacker.maxHp * 0.4);
+                    attacker.shield = shieldGain;
                     attacker.status.shielded = 2;
                     return {
                         damage: 0,
@@ -318,13 +333,19 @@ class PvPSystem {
 
     // ===== MATCH INITIALIZATION =====
     startPvPMatch(isRanked = false) {
-        // For MVP, create an AI opponent with similar stats
-        const playerStats = this.game.state.stats;
+        // Use PvP-specific stats instead of dungeon stats
+        const playerStats = this.game.pvpStats;
+
+        // Coin flip to determine who goes first
+        const playerGoesFirst = Math.random() < 0.5;
 
         this.currentMatch = {
             isRanked: isRanked,
             turn: 0,
-            maxTurns: 30,
+            maxTurns: Infinity, // Infinite turns
+            turnTimer: 60, // 60 seconds per turn
+            currentTurnTime: 60,
+            playerGoesFirst: playerGoesFirst,
 
             player: {
                 name: 'You',
@@ -340,24 +361,26 @@ class PvPSystem {
                 selectedSkills: [],
                 selectedAction: null,
                 status: {},
-                isPlayer: true
+                isPlayer: true,
+                timeRemaining: 60
             },
 
             opponent: {
-                name: 'Rival',
-                hp: 120,
-                maxHp: 120,
-                baseAttack: 12,
-                attack: 12,
-                speed: 110,
-                currentSpeed: 110,
-                critChance: 0.15,
-                statusResistance: 0.25,
+                name: 'AI Rival',
+                hp: 100 + (playerStats.vitality * 10), // Match player stats for fairness
+                maxHp: 100 + (playerStats.vitality * 10),
+                baseAttack: 10 + (playerStats.strength * 3),
+                attack: 10 + (playerStats.strength * 3),
+                speed: 100 + (playerStats.agility * 5),
+                currentSpeed: 100 + (playerStats.agility * 5),
+                critChance: 0.1 + (playerStats.luck * 0.05),
+                statusResistance: 0.2,
                 shield: 0,
                 selectedSkills: [],
                 selectedAction: null,
                 status: {},
-                isPlayer: false
+                isPlayer: false,
+                timeRemaining: 60
             },
 
             battleLog: [],
@@ -374,6 +397,16 @@ class PvPSystem {
             ...s,
             currentCooldown: 0
         }));
+
+        // Add coin flip result to battle log
+        const coinFlipMessage = playerGoesFirst ?
+            '🪙 Coin flip: You won! You go first.' :
+            '🪙 Coin flip: AI Rival won! They go first.';
+
+        this.currentMatch.battleLog.push({
+            turn: 0,
+            events: [{ message: coinFlipMessage, type: 'info' }]
+        });
 
         return this.currentMatch;
     }
@@ -518,8 +551,21 @@ class PvPSystem {
 
     executeGuard(actor) {
         actor.status.guarding = 1;
-        const shieldGain = Math.floor(actor.maxHp * 0.2);
-        actor.shield += shieldGain;
+        let shieldGain = Math.floor(actor.maxHp * 0.2);
+
+        // Apply diminishing returns if already shielded
+        if (actor.shield > 0) {
+            shieldGain = Math.floor(actor.maxHp * 0.1); // Reduced to 10% if already has shield
+            actor.shield += shieldGain;
+            return {
+                message: `${actor.name} uses Guard! Gains ${shieldGain} shield (reduced - already shielded)!`,
+                type: 'defense',
+                effect: 'Guarding (+10% shield - diminished)',
+                actionName: 'Guard'
+            };
+        }
+
+        actor.shield = shieldGain; // Overwrite existing shield instead of stacking
         return {
             message: `${actor.name} uses Guard! Gains ${shieldGain} shield!`,
             type: 'defense',
