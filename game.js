@@ -180,6 +180,10 @@ class DungeonAutGame {
         this.renderGhostStats();
     }
 
+    showStartPlayingMenu() {
+        this.showScreen('start-playing-screen');
+    }
+
     // ===== AUTHENTICATION METHODS =====
     switchAuthTab(tab) {
         // Toggle forms
@@ -1340,9 +1344,15 @@ class DungeonAutGame {
         match.player.selectedSkills = [...this.pvpSelectedSkills];
         match.opponent.selectedSkills = this.generateAISkillset();
 
-        // Initialize skills
-        match.player.skills = match.player.selectedSkills.map(s => ({ ...s, currentCooldown: 0 }));
-        match.opponent.skills = match.opponent.selectedSkills.map(s => ({ ...s, currentCooldown: 0 }));
+        // Initialize skills - preserve execute methods
+        match.player.skills = match.player.selectedSkills.map(s => {
+            s.currentCooldown = 0;
+            return s;
+        });
+        match.opponent.skills = match.opponent.selectedSkills.map(s => {
+            s.currentCooldown = 0;
+            return s;
+        });
 
         this.showScreen('pvp-battle-screen');
         this.updatePvPBattleUI();
@@ -1784,15 +1794,21 @@ class DungeonAutGame {
             this.showScreen('matchmaking-screen');
             document.getElementById('matchmaking-status').textContent = 'Waiting for opponent...';
         } else {
-            // AI match (existing code)
+            // AI match - start with coin flip
             const match = this.pvpSystem.startPvPMatch(this.pvpMode === 'ranked');
             match.player.selectedSkills = [...this.pvpSelectedSkills];
             match.opponent.selectedSkills = this.generateAISkillset();
-            match.player.skills = match.player.selectedSkills.map(s => ({ ...s, currentCooldown: 0 }));
-            match.opponent.skills = match.opponent.selectedSkills.map(s => ({ ...s, currentCooldown: 0 }));
+            match.player.skills = match.player.selectedSkills.map(s => {
+                s.currentCooldown = 0;
+                return s;
+            });
+            match.opponent.skills = match.opponent.selectedSkills.map(s => {
+                s.currentCooldown = 0;
+                return s;
+            });
 
-            this.showScreen('pvp-battle-screen');
-            this.updatePvPBattleUI();
+            // Show coin flip animation first
+            this.showCoinFlip(match.playerGoesFirst);
         }
     }
 
@@ -1847,23 +1863,83 @@ class DungeonAutGame {
 
             this.addPvPLog('Waiting for opponent...');
         } else {
-            // AI match (existing code)
+            // AI match - turn-based system
             const match = this.pvpSystem.currentMatch;
-            match.player.selectedAction = this.selectedPvPAction;
-            this.pvpSystem.selectAIAction();
-            const turnLog = this.pvpSystem.resolveTurn();
-            this.updatePvPBattleUI();
-            this.displayTurnLog(turnLog);
 
-            this.selectedPvPAction = null;
-            document.getElementById('pvp-confirm-btn').disabled = true;
+            // Stop the timer
+            this.stopPvPTimer();
 
-            if (match.winner) {
+            // Player's turn
+            if (match.isPlayerTurn) {
+                match.player.selectedAction = this.selectedPvPAction;
+
+                // Execute player's turn only
+                const turnLog = this.pvpSystem.resolveTurn();
+                this.updatePvPBattleUI();
+                this.displayTurnLog(turnLog);
+
+                // Check for game over
+                if (match.winner) {
+                    setTimeout(() => {
+                        this.endPvPBattle(match);
+                    }, 2000);
+                    return;
+                }
+
+                // Switch to AI's turn
+                match.isPlayerTurn = false;
+                this.selectedPvPAction = null;
+                document.getElementById('pvp-confirm-btn').disabled = true;
+
+                // Disable all action buttons during AI turn
+                document.querySelectorAll('.action-image-btn, .pvp-skill-btn').forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                });
+
+                // Add log message
+                this.addPvPLog('AI Rival is thinking...');
+
+                // AI takes their turn after a delay
                 setTimeout(() => {
-                    this.endPvPBattle(match);
+                    this.executeAITurn();
                 }, 2000);
             }
         }
+    }
+
+    executeAITurn() {
+        const match = this.pvpSystem.currentMatch;
+
+        // AI selects their action
+        this.pvpSystem.selectAIAction();
+
+        // Execute AI's turn only
+        const turnLog = this.pvpSystem.resolveTurn();
+        this.updatePvPBattleUI();
+        this.displayTurnLog(turnLog);
+
+        // Check for game over
+        if (match.winner) {
+            setTimeout(() => {
+                this.endPvPBattle(match);
+            }, 2000);
+            return;
+        }
+
+        // Switch back to player's turn
+        match.isPlayerTurn = true;
+
+        // Re-enable action buttons
+        document.querySelectorAll('.action-image-btn, .pvp-skill-btn').forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        });
+
+        // Restart timer for player's turn
+        this.startPvPTimer();
     }
 
     showOpponentWaiting() {
@@ -2274,6 +2350,66 @@ class DungeonAutGame {
             clearInterval(this.pvpTimerInterval);
             this.pvpTimerInterval = null;
         }
+    }
+
+    // ===== COIN FLIP ANIMATION =====
+    showCoinFlip(playerGoesFirst) {
+        // Show coin flip screen
+        this.showScreen('coin-flip-screen');
+
+        // Reset coin animation
+        const coin = document.getElementById('coin');
+        const resultDiv = document.getElementById('coin-flip-result');
+
+        // Remove and re-add the coin to restart animation
+        const parent = coin.parentElement;
+        const newCoin = coin.cloneNode(true);
+        parent.replaceChild(newCoin, coin);
+
+        // Player is always HEADS, AI is always TAILS
+        const result = playerGoesFirst ? 'HEADS' : 'TAILS';
+        const winner = playerGoesFirst ? 'You go first!' : 'AI Rival goes first!';
+
+        // Show result after animation (2.5 seconds)
+        setTimeout(() => {
+            resultDiv.innerHTML = `
+                <div>Player: HEADS | AI: TAILS</div>
+                <div style="font-size: 2rem; margin-top: 15px;">Result: ${result}</div>
+                <div class="winner">${winner}</div>
+            `;
+        }, 2200);
+
+        // Transition to battle screen after showing result (3 seconds total)
+        setTimeout(() => {
+            this.showScreen('pvp-battle-screen');
+            this.updatePvPBattleUI();
+
+            // Display coin flip result in battle log
+            const match = this.pvpSystem.currentMatch;
+            if (match.battleLog && match.battleLog[0]) {
+                this.displayTurnLog(match.battleLog[0]);
+            }
+
+            // If AI goes first, trigger their turn
+            if (!playerGoesFirst) {
+                // Disable player controls during AI turn
+                document.querySelectorAll('.action-image-btn, .pvp-skill-btn').forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                });
+
+                this.addPvPLog('AI Rival goes first...');
+
+                // AI takes their turn after a brief delay
+                setTimeout(() => {
+                    this.executeAITurn();
+                }, 2000);
+            } else {
+                // Player goes first, start their timer
+                this.startPvPTimer();
+            }
+        }, 5500);
     }
 }
 

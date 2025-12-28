@@ -5,6 +5,9 @@ class PvPSystem {
         this.game = game;
         this.currentMatch = null;
         this.aiOpponent = null;
+
+        // Initialize PvP skills
+        this.pvpSkills = this.getPvPSkills();
     }
 
     // ===== PVP SKILLS SYSTEM =====
@@ -196,10 +199,9 @@ class PvPSystem {
                 type: 'sustain',
                 priority: 'normal',
                 cooldown: 4,
-                desc: 'Restore 30% max HP',
+                desc: 'Restore 30% max HP, can crit',
                 execute: (attacker, defender) => {
                     const heal = Math.floor(attacker.maxHp * 0.3);
-                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
                     return {
                         damage: 0,
                         healing: heal,
@@ -246,13 +248,12 @@ class PvPSystem {
                 type: 'sustain',
                 priority: 'normal',
                 cooldown: 3,
-                desc: 'Deal 70% damage, heal for 100% of damage dealt',
+                desc: 'Deal 70% damage, heal for 100% of damage dealt (can crit both)',
                 execute: (attacker, defender) => {
                     const damage = Math.floor(attacker.attack * 0.7);
-                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + damage);
                     return {
                         damage: damage,
-                        healing: damage,
+                        healingBasedOnDamage: true,  // Special flag for life steal
                         message: `${attacker.name} drains life from ${defender.name}!`
                     };
                 }
@@ -309,6 +310,40 @@ class PvPSystem {
                         selfEffect: 'Attack +40% for 4 turns'
                     };
                 }
+            },
+            {
+                id: 'grievous_wounds',
+                name: '🩸 Grievous Wounds',
+                type: 'utility',
+                priority: 'normal',
+                cooldown: 4,
+                desc: 'Reduce target healing by 50% for 3 turns',
+                execute: (attacker, defender) => {
+                    defender.status.grievousWounds = 3;
+                    return {
+                        damage: 0,
+                        message: `${attacker.name} inflicts Grievous Wounds on ${defender.name}!`,
+                        statusEffect: 'Healing reduced by 50%'
+                    };
+                }
+            },
+            {
+                id: 'poison',
+                name: '☠️ Poison',
+                type: 'utility',
+                priority: 'normal',
+                cooldown: 4,
+                desc: 'Deal 15% max HP damage over 3 turns (5% per turn)',
+                execute: (attacker, defender) => {
+                    const dotDamage = Math.floor(defender.maxHp * 0.05);
+                    defender.status.poisoned = 3;
+                    defender.status.poisonDamage = dotDamage;
+                    return {
+                        damage: 0,
+                        message: `${attacker.name} poisons ${defender.name}!`,
+                        statusEffect: `Poisoned: ${dotDamage} damage per turn for 3 turns`
+                    };
+                }
             }
         ];
     }
@@ -346,6 +381,7 @@ class PvPSystem {
             turnTimer: 60, // 60 seconds per turn
             currentTurnTime: 60,
             playerGoesFirst: playerGoesFirst,
+            isPlayerTurn: playerGoesFirst, // Track whose turn it is
 
             player: {
                 name: 'You',
@@ -420,9 +456,9 @@ class PvPSystem {
         match.turn++;
         const turnLog = { turn: match.turn, events: [] };
 
-        // Update status effects at start of turn
-        this.updateStatusEffects(player);
-        this.updateStatusEffects(opponent);
+        // Update status effects at start of turn (apply poison damage, etc.)
+        this.updateStatusEffects(player, turnLog);
+        this.updateStatusEffects(opponent, turnLog);
 
         // Check if anyone is stunned
         if (player.status.stunned) {
@@ -469,7 +505,14 @@ class PvPSystem {
                 const result = this.executeGuard(actor);
                 turnLog.events.push(result);
             } else {
-                const result = this.executeSkill(actor, target, action);
+                // Find the actual skill definition from the master list
+                const skillDefinition = this.pvpSkills.find(s => s.id === action.id);
+                if (!skillDefinition) {
+                    console.error(`Skill not found: ${action.id}`);
+                    return;
+                }
+
+                const result = this.executeSkill(actor, target, skillDefinition);
                 turnLog.events.push(result);
 
                 // Put skill on cooldown
@@ -603,11 +646,33 @@ class PvPSystem {
             result.finalDamage = damageResult.damage;
             result.isCrit = damageResult.isCrit;
 
+            // For life steal, set healing equal to actual damage dealt
+            if (result.healingBasedOnDamage) {
+                result.healing = damageResult.damage;
+            }
+
             // Update message with crit indicator and actual damage
             if (damageResult.isCrit) {
                 result.message += ` Deals ${damageResult.damage} damage! 💥 CRITICAL HIT!`;
             } else if (damageResult.damage > 0) {
                 result.message += ` Deals ${damageResult.damage} damage!`;
+            }
+        }
+
+        // Apply healing with crit check
+        if (result.healing) {
+            const healResult = this.calculateHealing(attacker, result.healing);
+            attacker.hp = Math.min(attacker.maxHp, attacker.hp + healResult.healing);
+
+            result.finalHealing = healResult.healing;
+            result.isHealCrit = healResult.isCrit;
+
+            // Update message with crit indicator and actual healing
+            if (healResult.isCrit) {
+                result.message = result.message.replace(/heals? for \d+ HP/i, `heals for ${healResult.healing} HP 💚 CRIT HEAL!`);
+            } else if (result.healingBasedOnDamage) {
+                // For life steal, add healing info to message if it didn't crit
+                result.message += ` Heals for ${healResult.healing} HP!`;
             }
         }
 
@@ -651,9 +716,44 @@ class PvPSystem {
         return { damage: Math.floor(damage), isCrit: isCrit };
     }
 
-    updateStatusEffects(fighter) {
+    calculateHealing(healer, baseHealing) {
+        let healing = baseHealing;
+        let isCrit = false;
+
+        // Check for heal crit based on luck stat
+        if (Math.random() < healer.critChance) {
+            healing *= 1.5;
+            isCrit = true;
+        }
+
+        // Apply Grievous Wounds (reduces healing by 50%)
+        if (healer.status.grievousWounds) {
+            healing *= 0.5;
+        }
+
+        return { healing: Math.floor(healing), isCrit: isCrit };
+    }
+
+    updateStatusEffects(fighter, turnLog) {
+        // Apply poison damage over time
+        if (fighter.status.poisoned && fighter.status.poisonDamage) {
+            const poisonDmg = fighter.status.poisonDamage;
+            fighter.hp = Math.max(0, fighter.hp - poisonDmg);
+
+            if (turnLog) {
+                turnLog.events.push({
+                    message: `${fighter.name} takes ${poisonDmg} poison damage! ☠️`,
+                    type: 'dot',
+                    damage: poisonDmg,
+                    target: fighter.name
+                });
+            }
+        }
+
         // Decrement status durations
         Object.keys(fighter.status).forEach(status => {
+            if (status === 'poisonDamage') return; // Skip the poison damage value
+
             if (typeof fighter.status[status] === 'number') {
                 fighter.status[status]--;
                 if (fighter.status[status] <= 0) {
@@ -665,6 +765,9 @@ class PvPSystem {
                     }
                     if (status === 'slowed') {
                         fighter.currentSpeed = fighter.speed;
+                    }
+                    if (status === 'poisoned') {
+                        delete fighter.status.poisonDamage; // Clean up poison damage value
                     }
                 }
             }

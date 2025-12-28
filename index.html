@@ -11,7 +11,7 @@
         <!-- Login/Register Screen -->
         <div id="login-screen" class="screen active">
             <div class="glass-panel login-panel">
-                <h1 class="title">⚔️ DUNGEONAUT ⚔️</h1>
+                <img src="images/dungeonautLogo.png" alt="Dungeonaut" class="login-logo">
                 <p class="subtitle">Login or Create Account</p>
 
                 <!-- Auth Status -->
@@ -74,79 +74,90 @@
 
         <!-- Main Menu -->
         <div id="menu-screen" class="screen">
-            <div class="glass-panel main-menu">
-                <h1 class="title">⚔️ DUNGEONAUT ⚔️</h1>
-                <p class="subtitle">Master the Dungeon. Break the Clock.</p>
+            <div class="main-menu-container">
+                <!-- Header Section -->
+                <div class="menu-header">
+                    <img src="images/dungeonautLogo.png" alt="Dungeonaut" class="menu-logo">
+                    <p class="subtitle">Master the Dungeon. Break the Clock.</p>
 
-                <!-- Auth Info in Main Menu -->
-                <div class="menu-auth-info">
-                    <div id="menu-auth-user" class="auth-status-small">Not logged in</div>
-                    <button id="auth-login-btn" class="btn-small" onclick="game.authSystem.showLoginScreen()">Login</button>
-                    <button id="auth-logout-btn" class="btn-small" onclick="game.authSystem.logout()" style="display: none;">Logout</button>
+                    <!-- Auth Info -->
+                    <div class="menu-auth-info">
+                        <div id="menu-auth-user" class="auth-status-small">Not logged in</div>
+                        <button id="auth-login-btn" class="btn-small" onclick="game.authSystem.showLoginScreen()">Login</button>
+                        <button id="auth-logout-btn" class="btn-small" onclick="game.authSystem.logout()" style="display: none;">Logout</button>
+                    </div>
                 </div>
 
-                <div class="daily-info">
-                    <div class="info-item">
+                <!-- Simplified Main Menu Options -->
+                <div class="menu-main-options">
+                    <img src="images/viewProgression.png" alt="View Progression" class="menu-image-btn" onclick="game.showScreen('progression-screen')">
+
+                    <img src="images/startPlaying.png" alt="Start Playing" class="menu-image-btn" onclick="game.showStartPlayingMenu()">
+
+                    <img src="images/stats.png" alt="Stats" class="menu-image-btn" onclick="game.showGhostStats()">
+
+                    <img src="images/settings.png" alt="Settings" class="menu-image-btn" onclick="game.showSettings()">
+                </div>
+
+                <!-- Player Info Summary -->
+                <div class="menu-player-summary">
+                    <div class="summary-item">
                         <span class="label">Daily Seed:</span>
                         <span id="daily-seed" class="value">-</span>
                     </div>
-                    <div class="info-item">
-                        <span class="label">Today's Modifier:</span>
+                    <div class="summary-item">
+                        <span class="label">Modifier:</span>
                         <span id="daily-modifier" class="value">-</span>
                     </div>
-                    <div class="info-item">
+                    <div class="summary-item">
                         <span class="label">Stamina:</span>
                         <span id="stamina-display" class="value">5/5</span>
                     </div>
+                    <div class="summary-item">
+                        <span class="level-icon">⭐</span>
+                        <span id="player-level-display" class="value">Level 1</span>
+                    </div>
+                    <div class="summary-item">
+                        <span id="player-class-display" class="value">Novice</span>
+                    </div>
                 </div>
 
-                <!-- Player Progression Display -->
-                <div class="player-progression-summary glass-panel-mini">
-                    <div class="progression-header">
-                        <div class="player-level">
-                            <span class="level-icon">⭐</span>
-                            <span id="player-level-display">Level 1</span>
-                        </div>
-                        <div class="player-class">
-                            <span id="player-class-display">Novice</span>
-                        </div>
-                    </div>
-                    <div class="xp-bar-container">
-                        <div class="xp-bar-fill" id="xp-bar-fill" style="width: 0%"></div>
-                        <span class="xp-bar-text" id="xp-bar-text">0 / 100 XP</span>
-                    </div>
-                    <button class="btn-progression" onclick="game.showProgression()">
-                        📊 View Progression
-                    </button>
-                </div>
-
-                <div class="menu-buttons">
-                    <button class="btn btn-primary" onclick="game.showPlanningScreen()">
-                        <span class="btn-icon">🎯</span>
-                        Start Run
-                    </button>
-                    <img src="images/pvpButton.png" alt="PvP Arena" class="menu-image-btn" onclick="game.showPvPLobby()">
-                    <button class="btn btn-secondary" onclick="game.invasionSystem.showInvasionMenu()">
-                        <span class="btn-icon">⚔️</span>
-                        Invasion Mode
-                    </button>
-                    <img src="images/leaderboards.png" alt="Leaderboards" class="menu-image-btn" onclick="game.showLeaderboard()">
-                    <button class="btn btn-secondary" onclick="game.showGhostStats()">
-                        <span class="btn-icon">👻</span>
-                        Ghost Stats
-                    </button>
-                    <button class="btn btn-secondary" onclick="game.showSettings()">
-                        <span class="btn-icon">⚙️</span>
-                        Settings
-                    </button>
-                    <button class="btn btn-secondary" onclick="game.showFeedback()">
-                        <span class="btn-icon">💬</span>
-                        Send Feedback
-                    </button>
-                    <button class="btn btn-secondary" id="admin-menu-btn" onclick="game.adminSystem.showAdminDashboard()" style="display: none;">
+                <!-- Admin button (if admin) -->
+                <div class="menu-footer">
+                    <button class="btn btn-secondary btn-small-action" id="admin-menu-btn" onclick="game.adminSystem.showAdminDashboard()" style="display: none;">
                         <span class="btn-icon">🔐</span>
-                        Admin Panel
+                        Admin
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start Playing Submenu Screen -->
+        <div id="start-playing-screen" class="screen">
+            <div class="main-menu-container">
+                <div class="menu-header">
+                    <img src="images/dungeonautLogo.png" alt="Dungeonaut" class="menu-logo">
+                    <p class="subtitle">Choose Your Game Mode</p>
+                </div>
+
+                <div class="menu-game-modes-grid">
+                    <button class="btn btn-primary menu-mode-btn" onclick="game.showPlanningScreen()">
+                        <span class="btn-icon">🎯</span>
+                        <div class="btn-content">
+                            <div class="btn-title">Start Run</div>
+                            <div class="btn-subtitle">Daily Dungeon Challenge</div>
+                        </div>
+                    </button>
+
+                    <img src="images/pvpButton.png" alt="PvP Arena" class="menu-image-btn" onclick="game.showPvPLobby()">
+
+                    <img src="images/invasionMode.png" alt="Invasion Mode" class="menu-image-btn" onclick="game.invasionSystem.showInvasionMenu()">
+
+                    <img src="images/leaderboards.png" alt="Leaderboards" class="menu-image-btn" onclick="game.showLeaderboard()">
+                </div>
+
+                <div class="start-playing-actions">
+                    <button class="btn btn-secondary" onclick="game.showMainMenu()">Back to Main Menu</button>
                 </div>
             </div>
         </div>
@@ -667,6 +678,20 @@
                     <button class="btn btn-secondary" onclick="game.showPvPLobby()">Back</button>
                     <button class="btn btn-primary" onclick="game.startPvPBattle()" id="start-pvp-btn">Enter Battle</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Coin Flip Screen -->
+        <div id="coin-flip-screen" class="screen">
+            <div class="coin-flip-container">
+                <h1 class="coin-flip-title">Who Goes First?</h1>
+                <div class="coin-wrapper">
+                    <div id="coin" class="coin">
+                        <div class="coin-side heads">HEADS</div>
+                        <div class="coin-side tails">TAILS</div>
+                    </div>
+                </div>
+                <div id="coin-flip-result" class="coin-flip-result"></div>
             </div>
         </div>
 
